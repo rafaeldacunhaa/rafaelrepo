@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronômetro Climba</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            flex-direction: column;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            color: #151634;
+            width: 100%;
+            max-width: 800px;
+            padding: 0 20px;
+        }
+        .title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .time {
+            font-size: calc(10px + 10vmin);
+            margin-bottom: 1rem;
+        }
+        .time-out {
+            color: red;
+            font-size: calc(8px + 8vmin);
+            animation: blink 1s step-start infinite;
+        }
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+        .progress-container {
+            margin: 20px 0;
+        }
+        .predefined-buttons button {
+            margin: 5px;
+            background-color: #e0e0e0;
+            color: #151634;
+        }
+        .btn-primary {
+            background-color: #151634 !important;
+        }
+        .btn-secondary {
+            background-color: #74DC3B !important;
+            color: #151634;
+        }
+        .fullscreen-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 2rem;
+            color: #151634;
+        }
+    </style>
+</head>
+<body>
+    <button class="fullscreen-button" id="fullscreenButton">
+        <i class="material-icons">fullscreen</i>
+    </button>
+    <div class="container">
+        <div class="title">Cronômetro Climba by IA</div>
+        <div class="input-field inline">
+            <input id="hours" type="number" min="0" value="0" placeholder="HH">
+        </div>
+        <div class="input-field inline">
+            <input id="minutes" type="number" min="0" value="0" placeholder="MM">
+        </div>
+        <div class="input-field inline">
+            <input id="seconds" type="number" min="0" value="0" placeholder="SS">
+        </div>
+        <button id="startButton" class="btn waves-effect waves-light btn-primary">Iniciar</button>
+        <button id="resetButton" class="btn waves-effect waves-light btn-secondary">Reset</button>
+        <div class="predefined-buttons">
+            <button class="btn predefined-time" data-time="120">2 minutos</button>
+            <button class="btn predefined-time" data-time="480">8 minutos</button>
+            <button class="btn predefined-time" data-time="900">15 minutos</button>
+            <button class="btn predefined-time" data-time="1800">30 minutos</button>
+            <button class="btn predefined-time" data-time="3600">1 hora</button>
+        </div>
+        <div class="progress-container">
+            <div class="progress">
+                <div id="progressBar" class="determinate" style="width: 0%;"></div>
+            </div>
+        </div>
+        <div class="time" id="timeDisplay">00:00:00</div>
+        <div class="time-out" id="timeOutDisplay"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        let timer;
+        let endTime;
+        let totalMilliseconds;
+        let isTimeOut = false;
+
+        document.getElementById('startButton').addEventListener('click', function () {
+            const hours = parseInt(document.getElementById('hours').value) || 0;
+            const minutes = parseInt(document.getElementById('minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('seconds').value) || 0;
+            totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000;
+
+            if (totalMilliseconds > 0) {
+                startTimer(totalMilliseconds);
+            }
+        });
+
+        document.getElementById('resetButton').addEventListener('click', function () {
+            clearInterval(timer);
+            document.getElementById('timeDisplay').textContent = '00:00:00';
+            document.getElementById('timeOutDisplay').textContent = '';
+            document.getElementById('progressBar').style.width = '0%';
+            isTimeOut = false;
+        });
+
+        document.querySelectorAll('.predefined-time').forEach(button => {
+            button.addEventListener('click', function () {
+                const time = parseInt(this.getAttribute('data-time'));
+                const hours = Math.floor(time / 3600);
+                const minutes = Math.floor((time % 3600) / 60);
+                const seconds = time % 60;
+
+                document.getElementById('hours').value = hours;
+                document.getElementById('minutes').value = minutes;
+                document.getElementById('seconds').value = seconds;
+            });
+        });
+
+        document.getElementById('fullscreenButton').addEventListener('click', function () {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+        function startTimer(duration) {
+            clearInterval(timer);
+            isTimeOut = false;
+            endTime = Date.now() + duration;
+            document.getElementById('timeOutDisplay').textContent = '';
+            timer = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            const remainingTime = Math.max(0, endTime - Date.now());
+            const seconds = Math.floor(remainingTime / 1000) % 60;
+            const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
+            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+
+            document.getElementById('timeDisplay').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            const progress = ((totalMilliseconds - remainingTime) / totalMilliseconds) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            if (remainingTime === 0 && !isTimeOut) {
+                isTimeOut = true;
+                document.getElementById('timeOutDisplay').innerHTML = '⏰ TEMPO ESGOTADO ⏰';
+                endTime = Date.now();
+            }
+
+            if (isTimeOut) {
+                const elapsedTime = Date.now() - endTime;
+                const elapsedSeconds = Math.floor(elapsedTime / 1000) % 60;
+                const elapsedMinutes = Math.floor(elapsedTime / (1000 * 60)) % 60;
+                const elapsedHours = Math.floor(elapsedTime / (1000 * 60 * 60));
+
+                document.getElementById('timeDisplay').textContent = `+${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
+            }
+        }
+    </script>
+</body>
+</html>
