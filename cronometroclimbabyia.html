@@ -66,6 +66,9 @@
             font-size: 2rem;
             color: #151634;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -74,31 +77,33 @@
     </button>
     <div class="container">
         <div class="title">Cronômetro Climba by IA</div>
-        <div class="input-field inline">
-            <input id="hours" type="number" min="0" value="0" placeholder="HH">
+        <div id="controlPanel">
+            <div class="input-field inline">
+                <input id="hours" type="number" min="0" value="0" placeholder="HH">
+            </div>
+            <div class="input-field inline">
+                <input id="minutes" type="number" min="0" value="0" placeholder="MM">
+            </div>
+            <div class="input-field inline">
+                <input id="seconds" type="number" min="0" value="0" placeholder="SS">
+            </div>
+            <button id="startButton" class="btn waves-effect waves-light btn-primary">Iniciar</button>
+            <div class="predefined-buttons">
+                <button class="btn predefined-time" data-time="120">2 minutos</button>
+                <button class="btn predefined-time" data-time="480">8 minutos</button>
+                <button class="btn predefined-time" data-time="900">15 minutos</button>
+                <button class="btn predefined-time" data-time="1800">30 minutos</button>
+                <button class="btn predefined-time" data-time="3600">1 hora</button>
+            </div>
         </div>
-        <div class="input-field inline">
-            <input id="minutes" type="number" min="0" value="0" placeholder="MM">
-        </div>
-        <div class="input-field inline">
-            <input id="seconds" type="number" min="0" value="0" placeholder="SS">
-        </div>
-        <button id="startButton" class="btn waves-effect waves-light btn-primary">Iniciar</button>
-        <button id="resetButton" class="btn waves-effect waves-light btn-secondary">Reset</button>
-        <div class="predefined-buttons">
-            <button class="btn predefined-time" data-time="120">2 minutos</button>
-            <button class="btn predefined-time" data-time="480">8 minutos</button>
-            <button class="btn predefined-time" data-time="900">15 minutos</button>
-            <button class="btn predefined-time" data-time="1800">30 minutos</button>
-            <button class="btn predefined-time" data-time="3600">1 hora</button>
-        </div>
-        <div class="progress-container">
+        <div class="progress-container hidden">
             <div class="progress">
                 <div id="progressBar" class="determinate" style="width: 0%;"></div>
             </div>
         </div>
-        <div class="time" id="timeDisplay">00:00:00</div>
-        <div class="time-out" id="timeOutDisplay"></div>
+        <div class="time hidden" id="timeDisplay">00:00:00</div>
+        <div class="time-out hidden" id="timeOutDisplay"></div>
+        <button id="resetButton" class="btn waves-effect waves-light btn-secondary hidden">Parar</button>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
@@ -124,6 +129,7 @@
             document.getElementById('timeOutDisplay').textContent = '';
             document.getElementById('progressBar').style.width = '0%';
             isTimeOut = false;
+            toggleElements(true);
         });
 
         document.querySelectorAll('.predefined-time').forEach(button => {
@@ -155,6 +161,7 @@
             endTime = Date.now() + duration;
             document.getElementById('timeOutDisplay').textContent = '';
             timer = setInterval(updateTimer, 1000);
+            toggleElements(false);
         }
 
         function updateTimer() {
@@ -182,6 +189,14 @@
 
                 document.getElementById('timeDisplay').textContent = `+${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
             }
+        }
+
+        function toggleElements(show) {
+            document.getElementById('controlPanel').classList.toggle('hidden', !show);
+            document.getElementById('resetButton').classList.toggle('hidden', show);
+            document.getElementById('progressBar').parentElement.parentElement.classList.toggle('hidden', show);
+            document.getElementById('timeDisplay').classList.toggle('hidden', show);
+            document.getElementById('timeOutDisplay').classList.toggle('hidden', show);
         }
     </script>
 </body>
