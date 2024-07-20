@@ -15,25 +15,28 @@
             background-color: #f5f5f5;
             flex-direction: column;
             margin: 0;
+            transition: background-color 0.5s, color 0.5s;
         }
         .container {
             text-align: center;
-            color: #151634;
             width: 100%;
-            max-width: 800px;
             padding: 0 20px;
         }
         .title {
-            font-size: 2.5rem;
+            font-size: 2.5rem; /* Tamanho original */
             margin-bottom: 1rem;
+            color: #151634;
+            transition: color 0.5s;
         }
         .time {
-            font-size: calc(10px + 10vmin);
+            font-size: 15vw; /* Texto de tempo proporcional à largura da tela */
             margin-bottom: 1rem;
+            color: #151634;
+            transition: color 0.5s;
         }
         .time-out {
             color: red;
-            font-size: calc(8px + 8vmin);
+            font-size: 5vw; /* Texto de aviso proporcional à largura da tela */
             animation: blink 1s step-start infinite;
         }
         @keyframes blink {
@@ -48,13 +51,17 @@
             margin: 5px;
             background-color: #e0e0e0;
             color: #151634;
+            transition: background-color 0.5s, color 0.5s;
         }
         .btn-primary {
             background-color: #151634 !important;
+            color: #fff !important;
+            transition: background-color 0.5s, color 0.5s;
         }
         .btn-secondary {
             background-color: #74DC3B !important;
             color: #151634;
+            transition: background-color 0.5s, color 0.5s;
         }
         .fullscreen-button {
             position: absolute;
@@ -65,9 +72,22 @@
             cursor: pointer;
             font-size: 2rem;
             color: #151634;
+            transition: color 0.5s;
         }
         .hidden {
             display: none;
+        }
+        .input-field {
+            margin: 10px 0;
+        }
+        label {
+            font-size: 1.5rem;
+            color: #151634;
+            transition: color 0.5s;
+        }
+        input[type="number"] {
+            font-size: 2rem;
+            text-align: center;
         }
     </style>
 </head>
@@ -76,15 +96,18 @@
         <i class="material-icons">fullscreen</i>
     </button>
     <div class="container">
-        <div class="title">Cronômetro Climba by IA</div>
+        <div class="title" id="title">Cronômetro Climba by IA</div>
         <div id="controlPanel">
             <div class="input-field inline">
+                <label for="hours">Horas</label>
                 <input id="hours" type="number" min="0" value="0" placeholder="HH">
             </div>
             <div class="input-field inline">
+                <label for="minutes">Minutos</label>
                 <input id="minutes" type="number" min="0" value="0" placeholder="MM">
             </div>
             <div class="input-field inline">
+                <label for="seconds">Segundos</label>
                 <input id="seconds" type="number" min="0" value="0" placeholder="SS">
             </div>
             <button id="startButton" class="btn waves-effect waves-light btn-primary">Iniciar</button>
@@ -105,12 +128,14 @@
         <div class="time-out hidden" id="timeOutDisplay"></div>
         <button id="resetButton" class="btn waves-effect waves-light btn-secondary hidden">Parar</button>
     </div>
+    <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
         let timer;
         let endTime;
         let totalMilliseconds;
         let isTimeOut = false;
+        let alertInterval;
 
         document.getElementById('startButton').addEventListener('click', function () {
             const hours = parseInt(document.getElementById('hours').value) || 0;
@@ -125,9 +150,16 @@
 
         document.getElementById('resetButton').addEventListener('click', function () {
             clearInterval(timer);
+            clearInterval(alertInterval);
             document.getElementById('timeDisplay').textContent = '00:00:00';
             document.getElementById('timeOutDisplay').textContent = '';
             document.getElementById('progressBar').style.width = '0%';
+            document.body.style.backgroundColor = '#f5f5f5';
+            document.body.style.color = '#151634';
+            document.getElementById('title').style.color = '#151634';
+            document.getElementById('timeDisplay').style.color = '#151634';
+            const labels = document.querySelectorAll('label');
+            labels.forEach(label => label.style.color = '#151634');
             isTimeOut = false;
             toggleElements(true);
         });
@@ -157,6 +189,7 @@
 
         function startTimer(duration) {
             clearInterval(timer);
+            clearInterval(alertInterval);
             isTimeOut = false;
             endTime = Date.now() + duration;
             document.getElementById('timeOutDisplay').textContent = '';
@@ -178,7 +211,15 @@
             if (remainingTime === 0 && !isTimeOut) {
                 isTimeOut = true;
                 document.getElementById('timeOutDisplay').innerHTML = '⏰ TEMPO ESGOTADO ⏰';
+                document.body.style.backgroundColor = '#151634'; // Azul marinho
+                document.body.style.color = '#ffffff'; // Branco
+                document.getElementById('title').style.color = '#ffffff'; // Branco
+                document.getElementById('timeDisplay').style.color = '#ffffff'; // Branco
+                const labels = document.querySelectorAll('label');
+                labels.forEach(label => label.style.color = '#ffffff'); // Branco
+                playAlertSound();
                 endTime = Date.now();
+                alertInterval = setInterval(playAlertSound, 300000); // Toca a cada 5 minutos
             }
 
             if (isTimeOut) {
@@ -189,6 +230,11 @@
 
                 document.getElementById('timeDisplay').textContent = `+${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
             }
+        }
+
+        function playAlertSound() {
+            const alertSound = document.getElementById('alertSound');
+            alertSound.play();
         }
 
         function toggleElements(show) {
