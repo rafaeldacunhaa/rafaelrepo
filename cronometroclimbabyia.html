@@ -23,20 +23,20 @@
             padding: 0 20px;
         }
         .title {
-            font-size: 2.5rem; /* Tamanho original */
+            font-size: 2.5rem;
             margin-bottom: 1rem;
             color: #151634;
             transition: color 0.5s;
         }
         .time {
-            font-size: 15vw; /* Texto de tempo proporcional à largura da tela */
+            font-size: 10vw;
             margin-bottom: 1rem;
             color: #151634;
             transition: color 0.5s;
         }
         .time-out {
             color: red;
-            font-size: 5vw; /* Texto de aviso proporcional à largura da tela */
+            font-size: 8vw;
             animation: blink 1s step-start infinite;
         }
         @keyframes blink {
@@ -46,6 +46,20 @@
         }
         .progress-container {
             margin: 20px 0;
+            height: 30px;
+            position: relative;
+        }
+        .progress {
+            height: 100%;
+        }
+        #progressBar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            line-height: 30px;
+            color: #fff;
+            text-align: center;
         }
         .predefined-buttons button {
             margin: 5px;
@@ -74,6 +88,13 @@
             color: #151634;
             transition: color 0.5s;
         }
+        .clock {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 4rem;
+            color: #000000;
+        }
         .hidden {
             display: none;
         }
@@ -92,6 +113,7 @@
     </style>
 </head>
 <body>
+    <div class="clock" id="currentTime"></div>
     <button class="fullscreen-button" id="fullscreenButton">
         <i class="material-icons">fullscreen</i>
     </button>
@@ -121,7 +143,7 @@
         </div>
         <div class="progress-container hidden">
             <div class="progress">
-                <div id="progressBar" class="determinate" style="width: 0%;"></div>
+                <div id="progressBar" class="determinate" style="width: 0%;">0%</div>
             </div>
         </div>
         <div class="time hidden" id="timeDisplay">00:00:00</div>
@@ -131,66 +153,46 @@
     <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
-        let timer;
-        let endTime;
-        let totalMilliseconds;
-        let isTimeOut = false;
-        let alertInterval;
+        let timer, endTime, totalMilliseconds, isTimeOut = false, alertInterval, elapsedTotal = 0;
 
-        document.getElementById('startButton').addEventListener('click', function () {
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('pt-BR');
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        document.getElementById('startButton').addEventListener('click', () => {
             const hours = parseInt(document.getElementById('hours').value) || 0;
             const minutes = parseInt(document.getElementById('minutes').value) || 0;
             const seconds = parseInt(document.getElementById('seconds').value) || 0;
             totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000;
 
-            if (totalMilliseconds > 0) {
-                startTimer(totalMilliseconds);
-            }
+            if (totalMilliseconds > 0) startTimer(totalMilliseconds);
         });
 
-        document.getElementById('resetButton').addEventListener('click', function () {
-            clearInterval(timer);
-            clearInterval(alertInterval);
-            document.getElementById('timeDisplay').textContent = '00:00:00';
-            document.getElementById('timeOutDisplay').textContent = '';
-            document.getElementById('progressBar').style.width = '0%';
-            document.body.style.backgroundColor = '#f5f5f5';
-            document.body.style.color = '#151634';
-            document.getElementById('title').style.color = '#151634';
-            document.getElementById('timeDisplay').style.color = '#151634';
-            const labels = document.querySelectorAll('label');
-            labels.forEach(label => label.style.color = '#151634');
-            isTimeOut = false;
-            toggleElements(true);
-        });
+        document.getElementById('resetButton').addEventListener('click', resetTimer);
 
         document.querySelectorAll('.predefined-time').forEach(button => {
-            button.addEventListener('click', function () {
-                const time = parseInt(this.getAttribute('data-time'));
-                const hours = Math.floor(time / 3600);
-                const minutes = Math.floor((time % 3600) / 60);
-                const seconds = time % 60;
-
-                document.getElementById('hours').value = hours;
-                document.getElementById('minutes').value = minutes;
-                document.getElementById('seconds').value = seconds;
+            button.addEventListener('click', () => {
+                const time = parseInt(button.getAttribute('data-time'));
+                document.getElementById('hours').value = Math.floor(time / 3600);
+                document.getElementById('minutes').value = Math.floor((time % 3600) / 60);
+                document.getElementById('seconds').value = time % 60;
             });
         });
 
-        document.getElementById('fullscreenButton').addEventListener('click', function () {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
+        document.getElementById('fullscreenButton').addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
         });
 
         function startTimer(duration) {
             clearInterval(timer);
             clearInterval(alertInterval);
             isTimeOut = false;
+            elapsedTotal = 0;
             endTime = Date.now() + duration;
             document.getElementById('timeOutDisplay').textContent = '';
             timer = setInterval(updateTimer, 1000);
@@ -202,45 +204,63 @@
             const seconds = Math.floor(remainingTime / 1000) % 60;
             const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
             const hours = Math.floor(remainingTime / (1000 * 60 * 60));
-
             document.getElementById('timeDisplay').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
             const progress = ((totalMilliseconds - remainingTime) / totalMilliseconds) * 100;
             document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
 
             if (remainingTime === 0 && !isTimeOut) {
                 isTimeOut = true;
                 document.getElementById('timeOutDisplay').innerHTML = '⏰ TEMPO ESGOTADO ⏰';
-                document.body.style.backgroundColor = '#151634'; // Azul marinho
-                document.body.style.color = '#ffffff'; // Branco
-                document.getElementById('title').style.color = '#ffffff'; // Branco
-                document.getElementById('timeDisplay').style.color = '#ffffff'; // Branco
-                const labels = document.querySelectorAll('label');
-                labels.forEach(label => label.style.color = '#ffffff'); // Branco
+                document.body.style.backgroundColor = '#151634';
+                document.body.style.color = '#ffffff';
+                document.getElementById('currentTime').style.color = '#FFFFFF';
+                document.getElementById('title').style.color = '#ffffff';
+                document.getElementById('timeDisplay').style.color = '#ffffff';
+                document.querySelectorAll('label').forEach(label => label.style.color = '#ffffff');
                 playAlertSound();
                 endTime = Date.now();
-                alertInterval = setInterval(playAlertSound, 300000); // Toca a cada 5 minutos
+                alertInterval = setInterval(playAlertSound, 300000);
             }
 
             if (isTimeOut) {
+                elapsedTotal++;
                 const elapsedTime = Date.now() - endTime;
                 const elapsedSeconds = Math.floor(elapsedTime / 1000) % 60;
                 const elapsedMinutes = Math.floor(elapsedTime / (1000 * 60)) % 60;
                 const elapsedHours = Math.floor(elapsedTime / (1000 * 60 * 60));
-
                 document.getElementById('timeDisplay').textContent = `+${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
+                document.getElementById('progressBar').textContent = `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
             }
         }
 
+        function resetTimer() {
+            clearInterval(timer);
+            clearInterval(alertInterval);
+            document.getElementById('timeDisplay').textContent = '00:00:00';
+            document.getElementById('timeOutDisplay').textContent = '';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressBar').textContent = '0%';
+            document.body.style.backgroundColor = '#f5f5f5';
+            document.body.style.color = '#151634';
+            document.getElementById('title').style.color = '#151634';
+            document.getElementById('currentTime').style.color = '#000000';
+            document.getElementById('timeDisplay').style.color = '#151634';
+            document.querySelectorAll('label').forEach(label => label.style.color = '#151634');
+            isTimeOut = false;
+            elapsedTotal = 0;
+            toggleElements(true);
+        }
+
         function playAlertSound() {
-            const alertSound = document.getElementById('alertSound');
-            alertSound.play();
+            document.getElementById('alertSound').play();
         }
 
         function toggleElements(show) {
             document.getElementById('controlPanel').classList.toggle('hidden', !show);
             document.getElementById('resetButton').classList.toggle('hidden', show);
-            document.getElementById('progressBar').parentElement.parentElement.classList.toggle('hidden', show);
+            document.querySelector('.progress-container').classList.toggle('hidden', show);
             document.getElementById('timeDisplay').classList.toggle('hidden', show);
             document.getElementById('timeOutDisplay').classList.toggle('hidden', show);
         }
