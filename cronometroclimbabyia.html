@@ -325,47 +325,53 @@
             timer = setInterval(() => updateTimer(duration, isBloco), 1000);
         }
 
-        // Atualiza o cronômetro e a barra de progresso
         function updateTimer(initialDuration, isBloco) {
-            const remainingTime = Math.max(0, endTime - Date.now());
-            const seconds = Math.floor(remainingTime / 1000) % 60;
-            const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
-            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
-            document.getElementById('timeDisplay').classList.remove('hidden');
-            document.getElementById('timeDisplay').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    const currentTime = Date.now();
+    let remainingTime = endTime - currentTime;
+    const isTimeOver = remainingTime <= 0;
+    
+    if (isTimeOver) {
+        // Inverte o contador para contar o tempo atrasado
+        remainingTime = Math.abs(remainingTime);
+    }
 
-            // Atualiza a barra de progresso
-            const progress = ((initialDuration - remainingTime) / initialDuration) * 100;
-            document.getElementById('progressBar').style.width = `${progress}%`;
-            document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
+    const seconds = Math.floor(remainingTime / 1000) % 60;
+    const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
+    const hours = Math.floor(remainingTime / (1000 * 60 * 60));
 
-            // Mudar o fundo quando restar 10% do tempo
-            if (remainingTime <= initialDuration * 0.1 && remainingTime > 0) {
-                document.body.style.backgroundColor = '#adff2f';  // Verde limão
-                const remainingMinutes = Math.ceil(remainingTime / 60000);
-                document.getElementById('timeOutDisplay').textContent = `Tempo acabando...`;
-                document.getElementById('timeOutDisplay').classList.remove('hidden');
-            }
+    document.getElementById('timeDisplay').classList.remove('hidden');
+    document.getElementById('timeDisplay').textContent = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-            if (remainingTime === 0 && !isTimeOut) {
-                if (!playedAlertOnce) {
-                    playAlertSound();
-                    playedAlertOnce = true;  // Marca que o alerta tocou uma vez
-                }
-                document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
-                document.body.style.backgroundColor = '#151634';  // Azul escuro quando acabar
-                document.body.style.color = '#ffffff';  // Mudar a cor do horário atual para branco
-                document.getElementById('currentTime').style.color = '#ffffff';  // Mudar cor do horário atual
-                document.getElementById('timeDisplay').style.color = '#ffffff';  // Mudar cor do cronômetro para branco
+    // Atualiza a barra de progresso enquanto o tempo não acabar
+    const progress = isTimeOver ? 100 : ((initialDuration - (isTimeOver ? 0 : remainingTime)) / initialDuration) * 100;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+    document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
 
-                // Se houver mais blocos, mostrar o próximo
-                if (currentBlocoIndex < blocos.length) {
-                    showNextBloco();
-                } else {
-                    startAlertRepeat();  // Inicia o som de alarme a cada 5 minutos
-                }
-            }
+    // Mudar o fundo quando restar 10% do tempo
+    if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
+        document.body.style.backgroundColor = '#adff2f';  // Verde limão
+        document.getElementById('timeOutDisplay').textContent = `Tempo acabando...`;
+        document.getElementById('timeOutDisplay').classList.remove('hidden');
+    }
+
+    if (isTimeOver) {
+        // Quando o tempo acabar, começamos a contar o tempo de atraso
+        document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
+        document.body.style.backgroundColor = '#151634';  // Azul escuro
+        document.body.style.color = '#ffffff';
+        document.getElementById('currentTime').style.color = '#ffffff';  // Cor do horário atual
+        document.getElementById('timeDisplay').style.color = '#ffffff';  // Cor do cronômetro
+        
+        // Se estamos lidando com blocos e o bloco atual terminou
+        if (isBloco && currentBlocoIndex < blocos.length) {
+            showNextBloco(); // Mostra o botão de iniciar próximo bloco
+        } else if (isBloco && currentBlocoIndex >= blocos.length) {
+            startAlertRepeat();  // Inicia o alarme de repetição após todos os blocos
         }
+    }
+}
+
+
 
         function showNextBloco() {
             const nextBloco = blocos[currentBlocoIndex];
