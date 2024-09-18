@@ -196,10 +196,17 @@
                     </div>
                 </div>
                 <button id="addBlocoButton" class="btn waves-effect waves-light btn-primary">Adicionar Bloco</button>
-                <!-- Exibir lista de blocos cadastrados -->
                 <ul id="blocoList" class="bloco-list"></ul>
+                 <!-- Novo dropdown para seleção de reuniões predefinidas -->
+                <div>
+                    <label for="reuniaoTemplate">Selecionar Reunião Predefinida</label>
+                    <select id="reuniaoTemplate" class="browser-default">
+                        <option value="" disabled selected>Escolha uma reunião...</option>
+                    </select>
+                </div>
             </div>
         </div>
+
 
         <!-- Exibir nome do bloco atual -->
         <div class="bloco-name-display hidden" id="currentBlocoName"></div>
@@ -227,6 +234,44 @@
         let alertRepeatInterval, playedAlertOnce = false;
         const blocos = [];
 
+        const reunioesPredefinidas = {
+            weekly: [
+                { name: 'Reunião Escrita', duration: 8 },
+                { name: 'Leitura Reunião Escrita', duration: 10 },
+                { name: 'Revisão dos KPIs', duration: 20 },
+                { name: 'Finalização', duration: 2 }
+            ],
+            weekly2: [
+                { name: 'Boas-vindas', duration: 5 },
+                { name: 'Discussão', duration: 25 },
+                { name: 'Encerramento', duration: 10 }
+            ]
+        };
+
+        // Preencher o dropdown com reuniões predefinidas
+        const reuniaoTemplateSelect = document.getElementById('reuniaoTemplate');
+        for (const reuniao in reunioesPredefinidas) {
+            const option = document.createElement('option');
+            option.value = reuniao;
+            option.textContent = reuniao.charAt(0).toUpperCase() + reuniao.slice(1);
+            reuniaoTemplateSelect.appendChild(option);
+        }
+
+        reuniaoTemplateSelect.addEventListener('change', function() {
+            const selectedReuniao = this.value;
+            if (reunioesPredefinidas[selectedReuniao]) {
+                // Limpa blocos anteriores
+                blocos.length = 0;
+                document.getElementById('blocoList').innerHTML = '';
+
+                // Adiciona os blocos da reunião selecionada
+                reunioesPredefinidas[selectedReuniao].forEach(bloco => {
+                    blocos.push({ name: bloco.name, duration: bloco.duration * 60000 });
+                    renderBloco(bloco.name, bloco.duration * 60000);
+                });
+            }
+        });
+
         // Exibir horário atual
         function updateClock() {
             const now = new Date();
@@ -235,29 +280,25 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Função para reiniciar o cronômetro
         document.getElementById('resetButton').addEventListener('click', resetTimer);
 
-        // Função para iniciar com base no tempo definido ou pelos blocos
         document.getElementById('startButton').addEventListener('click', () => {
-            playedAlertOnce = false;  // Reset alert flag
+            playedAlertOnce = false;
             if (blocos.length > 0) {
-                startBlocosTimer();  // Iniciar a contagem pelos blocos
+                startBlocosTimer();
             } else {
                 const hours = parseInt(document.getElementById('hours').value) || 0;
                 const minutes = parseInt(document.getElementById('minutes').value) || 0;
                 const seconds = parseInt(document.getElementById('seconds').value) || 0;
                 totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000;
-    
+
                 if (totalMilliseconds > 0) startTimer(totalMilliseconds);
             }
-            // Mostrar a seção do cronômetro e esconder os campos
             document.getElementById('configSection').classList.add('hidden');
             document.getElementById('cronometroSection').classList.remove('hidden');
             document.getElementById('nextBlocoSection').classList.add('hidden');
         });
 
-        // Formato 2: Definir horário final
         document.getElementById('endHour').addEventListener('change', () => {
             const endTimeInput = document.getElementById('endHour').value;
             if (endTimeInput) {
@@ -271,7 +312,6 @@
             }
         });
 
-        // Adicionar botões de tempos predefinidos
         document.querySelectorAll('.predefined-time').forEach(button => {
             button.addEventListener('click', () => {
                 const time = parseInt(button.getAttribute('data-time'));
@@ -281,10 +321,9 @@
             });
         });
 
-        // Adicionar blocos e tempos
         document.getElementById('addBlocoButton').addEventListener('click', () => {
             const name = document.querySelector('.bloco-name').value;
-            const duration = parseInt(document.querySelector('.bloco-duration').value) * 60000;  // converter para milissegundos
+            const duration = parseInt(document.querySelector('.bloco-duration').value) * 60000;
 
             if (name && duration > 0) {
                 blocos.push({ name, duration });
@@ -292,7 +331,6 @@
             }
         });
 
-        // Exibir os blocos cadastrados de forma mais atraente
         function renderBloco(name, duration) {
             const blocoElement = document.createElement('li');
             blocoElement.classList.add('bloco-item');
@@ -302,12 +340,11 @@
 
         function startBlocosTimer() {
             if (currentBlocoIndex < blocos.length) {
-
-                document.body.style.backgroundColor = '#f5f5f5';  // Resetar o fundo
+                document.body.style.backgroundColor = '#f5f5f5';
                 document.body.style.color = '#151634';
-                document.getElementById('currentTime').style.color = '#151634';  // Resetar a cor do horário atual
-                document.getElementById('timeDisplay').style.color = '#151634';  // Resetar cor do cronômetro
-    
+                document.getElementById('currentTime').style.color = '#151634';
+                document.getElementById('timeDisplay').style.color = '#151634';
+
                 const bloco = blocos[currentBlocoIndex];
                 document.getElementById('currentBlocoName').classList.remove('hidden');
                 document.getElementById('currentBlocoName').textContent = `Bloco Atual: ${bloco.name}`;
@@ -316,62 +353,60 @@
             }
         }
 
-        // Função genérica para iniciar o cronômetro
         function startTimer(duration, isBloco = false) {
             clearInterval(timer);
             document.getElementById('resetButton').classList.remove('hidden');
-            document.getElementById('timeOutDisplay').classList.add('hidden');  // Esconde mensagens de alerta
+            document.getElementById('timeOutDisplay').classList.add('hidden');
             endTime = Date.now() + duration;
             timer = setInterval(() => updateTimer(duration, isBloco), 1000);
         }
 
         function updateTimer(initialDuration, isBloco) {
-    const currentTime = Date.now();
-    let remainingTime = endTime - currentTime;
-    const isTimeOver = remainingTime <= 0;
-    
-    if (isTimeOver) {
-        // Inverte o contador para contar o tempo atrasado
-        remainingTime = Math.abs(remainingTime);
-    }
+            const currentTime = Date.now();
+            let remainingTime = endTime - currentTime;
+            const isTimeOver = remainingTime <= 0;
 
-    const seconds = Math.floor(remainingTime / 1000) % 60;
-    const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
-    const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+            if (isTimeOver) {
+                remainingTime = Math.abs(remainingTime);
+            }
 
-    document.getElementById('timeDisplay').classList.remove('hidden');
-    document.getElementById('timeDisplay').textContent = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const seconds = Math.floor(remainingTime / 1000) % 60;
+            const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
+            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
 
-    // Atualiza a barra de progresso enquanto o tempo não acabar
-    const progress = isTimeOver ? 100 : ((initialDuration - (isTimeOver ? 0 : remainingTime)) / initialDuration) * 100;
-    document.getElementById('progressBar').style.width = `${progress}%`;
-    document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
+            document.getElementById('timeDisplay').classList.remove('hidden');
+            document.getElementById('timeDisplay').textContent = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-    // Mudar o fundo quando restar 10% do tempo
-    if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
-        document.body.style.backgroundColor = '#adff2f';  // Verde limão
-        document.getElementById('timeOutDisplay').textContent = `Tempo acabando...`;
-        document.getElementById('timeOutDisplay').classList.remove('hidden');
-    }
+            const progress = isTimeOver ? 100 : ((initialDuration - remainingTime) / initialDuration) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
 
-    if (isTimeOver) {
-        // Quando o tempo acabar, começamos a contar o tempo de atraso
-        document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
-        document.body.style.backgroundColor = '#151634';  // Azul escuro
-        document.body.style.color = '#ffffff';
-        document.getElementById('currentTime').style.color = '#ffffff';  // Cor do horário atual
-        document.getElementById('timeDisplay').style.color = '#ffffff';  // Cor do cronômetro
-        
-        // Se estamos lidando com blocos e o bloco atual terminou
-        if (isBloco && currentBlocoIndex < blocos.length) {
-            showNextBloco(); // Mostra o botão de iniciar próximo bloco
-        } else if (isBloco && currentBlocoIndex >= blocos.length) {
-            startAlertRepeat();  // Inicia o alarme de repetição após todos os blocos
+            if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
+                document.body.style.backgroundColor = '#adff2f';
+                document.getElementById('timeOutDisplay').textContent = `Tempo acabando...`;
+                document.getElementById('timeOutDisplay').classList.remove('hidden');
+            }
+
+            if (isTimeOver) {
+                document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
+                document.body.style.backgroundColor = '#151634';
+                document.body.style.color = '#ffffff';
+                document.getElementById('currentTime').style.color = '#ffffff';
+                document.getElementById('timeDisplay').style.color = '#ffffff';
+
+                if (!playedAlertOnce) {
+                    playAlertSound();  // Toca o alerta assim que o tempo termina
+                    playedAlertOnce = true;
+                }
+
+                if (isBloco && currentBlocoIndex < blocos.length) {
+                    showNextBloco();
+                } else {
+                    startAlertRepeat();  // Inicia o loop de 5 minutos
+                }
+            }
+
         }
-    }
-}
-
-
 
         function showNextBloco() {
             const nextBloco = blocos[currentBlocoIndex];
@@ -379,7 +414,7 @@
             document.getElementById('nextBlocoSection').classList.remove('hidden');
             document.getElementById('startNextBlocoButton').addEventListener('click', () => {
                 document.getElementById('nextBlocoSection').classList.add('hidden');
-                startBlocosTimer();  // Iniciar o próximo bloco
+                startBlocosTimer();
             });
         }
 
@@ -388,33 +423,36 @@
         }
 
         function startAlertRepeat() {
+            if (!playedAlertOnce) {
+                playAlertSound();
+                playedAlertOnce = true;  // Marca que o som tocou uma vez
+            }
             if (alertRepeatInterval) {
                 clearInterval(alertRepeatInterval);
             }
             alertRepeatInterval = setInterval(() => {
                 playAlertSound();
-            }, 300000);  // Toca o som a cada 5 minutos
+            }, 300000);  // Toca a cada 5 minutos
         }
 
-        // Função para resetar o cronômetro
+
         function resetTimer() {
             clearInterval(timer);
-            clearInterval(alertRepeatInterval);  // Para o alarme de 5 em 5 minutos
+            clearInterval(alertRepeatInterval);
             document.getElementById('timeDisplay').textContent = '00:00:00';
             document.getElementById('configSection').classList.remove('hidden');
             document.getElementById('cronometroSection').classList.add('hidden');
             document.getElementById('resetButton').classList.add('hidden');
             document.getElementById('currentBlocoName').classList.add('hidden');
             document.getElementById('timeOutDisplay').classList.add('hidden');
-            document.body.style.backgroundColor = '#f5f5f5';  // Resetar o fundo
+            document.body.style.backgroundColor = '#f5f5f5';
             document.body.style.color = '#151634';
-            document.getElementById('currentTime').style.color = '#151634';  // Resetar a cor do horário atual
-            document.getElementById('timeDisplay').style.color = '#151634';  // Resetar cor do cronômetro
+            document.getElementById('currentTime').style.color = '#151634';
+            document.getElementById('timeDisplay').style.color = '#151634';
             currentBlocoIndex = 0;
-            playedAlertOnce = false;  // Reset alert flag
+            playedAlertOnce = false;
         }
 
-        // Botão de fullscreen
         document.getElementById('fullscreenButton').addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
