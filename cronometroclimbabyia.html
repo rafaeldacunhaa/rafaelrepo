@@ -71,6 +71,23 @@
             color: #fff;
             text-align: center;
         }
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #0d47a1 0%, #072452 100%);
+        }
+
+        @keyframes pulse {
+            0% { background-color: #4caf50; }
+            50% { background-color: #8bc34a; }
+            100% { background-color: #4caf50; }
+        }
+
+        #progressBar {
+            animation: pulse 2s infinite;
+        }
+
+
+
         .predefined-buttons button {
             margin: 5px;
             background-color: #e0e0e0;
