@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cronômetro Climba</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/147/147186.png" type="image/png">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
     <style>
@@ -129,7 +130,7 @@
         }
         .time-out {
             color: red;
-            font-size: 7vw;
+            font-size: 5vw;
             animation: blink 1s step-start infinite;
         }
         .hidden {
@@ -237,13 +238,14 @@
         const reunioesPredefinidas = {
             weekly: [
                 { name: 'Reunião Escrita', duration: 8 },
-                { name: 'Leitura Reunião Escrita', duration: 10 },
-                { name: 'Revisão dos KPIs', duration: 20 },
-                { name: 'Finalização', duration: 2 }
+                { name: 'Leitura Reunião Escrita', duration: 8 },
+                { name: 'Revisão dos KPIs', duration: 10 },
+                { name: 'Revisão das Metas de Setor e Individuais', duration: 25 },
+                { name: 'Revisão de Combinados', duration: 5 }
             ],
-            weekly2: [
-                { name: 'Boas-vindas', duration: 5 },
-                { name: 'Discussão', duration: 25 },
+            reuniao: [
+                { name: 'Abertura de Pauta', duration: 5 },
+                { name: 'Discussão', duration: 45 },
                 { name: 'Encerramento', duration: 10 }
             ]
         };
@@ -383,7 +385,7 @@
 
             if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
                 document.body.style.backgroundColor = '#adff2f';
-                document.getElementById('timeOutDisplay').textContent = `Tempo acabando...`;
+                document.getElementById('timeOutDisplay').textContent = `⚠️ Tempo acabando! ⚠️`;
                 document.getElementById('timeOutDisplay').classList.remove('hidden');
             }
 
