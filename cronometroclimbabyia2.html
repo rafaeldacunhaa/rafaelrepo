@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cronômetro Climba</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/147/147186.png" type="image/png">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
     <style>
@@ -71,6 +71,23 @@
             color: #fff;
             text-align: center;
         }
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #0d47a1 0%, #072452 100%);
+        }
+
+        @keyframes pulse {
+            0% { background-color: #4caf50; }
+            50% { background-color: #8bc34a; }
+            100% { background-color: #4caf50; }
+        }
+
+        #progressBar {
+            animation: pulse 2s infinite;
+        }
+
+
+
         .predefined-buttons button {
             margin: 5px;
             background-color: #e0e0e0;
@@ -130,7 +147,7 @@
         }
         .time-out {
             color: red;
-            font-size: 7vw;
+            font-size: 5vw;
             animation: blink 1s step-start infinite;
         }
         .hidden {
@@ -238,16 +255,51 @@
         const reunioesPredefinidas = {
             weekly: [
                 { name: 'Reunião Escrita', duration: 8 },
-                { name: 'Leitura Reunião Escrita', duration: 10 },
-                { name: 'Revisão dos KPIs', duration: 20 },
-                { name: 'Finalização', duration: 2 }
+                { name: 'Leitura Reunião Escrita', duration: 8 },
+                { name: 'Revisão dos KPIs', duration: 10 },
+                { name: 'Revisão das Metas de Setor e Individuais', duration: 25 },
+                { name: 'Revisão de Combinados', duration: 5 }
             ],
-            weekly2: [
-                { name: 'Boas-vindas', duration: 5 },
-                { name: 'Discussão', duration: 25 },
+            reuniao: [
+                { name: 'Abertura de Pauta', duration: 5 },
+                { name: 'Discussão', duration: 45 },
                 { name: 'Encerramento', duration: 10 }
             ]
         };
+
+
+        // Função para solicitar permissão de notificação
+function requestNotificationPermission() {
+    if (Notification.permission === 'default' || Notification.permission === 'denied') {
+        Notification.requestPermission().then(function(permission) {
+            if (permission === "granted") {
+                console.log('Permissão de notificação concedida.');
+            } else {
+                console.log('Permissão de notificação negada.');
+            }
+        });
+    } else if (Notification.permission === 'granted') {
+        console.log('Permissão de notificação já concedida.');
+    }
+}
+
+// Função para exibir notificação
+function showNotification(message) {
+    // Verifica se a aba está oculta e se a permissão foi concedida
+    if (document.hidden && Notification.permission === "granted") {
+        new Notification('Cronômetro Climba', {
+            body: message,
+            icon: 'https://cdn-icons-png.flaticon.com/512/1170/1170576.png'  // Ícone da notificação
+        });
+    }
+}
+
+// Chamar a função de solicitação assim que a página carregar ou ao iniciar o cronômetro
+document.addEventListener('DOMContentLoaded', (event) => {
+    requestNotificationPermission();
+});
+
+
 
         // Preencher o dropdown com reuniões predefinidas
         const reuniaoTemplateSelect = document.getElementById('reuniaoTemplate');
@@ -384,8 +436,10 @@
 
             if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
                 document.body.style.backgroundColor = '#adff2f';
-                document.getElementById('timeOutDisplay').textContent = `Tempo acabando...`;
+                document.getElementById('timeOutDisplay').textContent = `⚠️ Tempo acabando! ⚠️`;
                 document.getElementById('timeOutDisplay').classList.remove('hidden');
+
+                showNotification('⚠️ O tempo está acabando!');
             }
 
             if (isTimeOver) {
@@ -395,12 +449,20 @@
                 document.getElementById('currentTime').style.color = '#ffffff';
                 document.getElementById('timeDisplay').style.color = '#ffffff';
 
+                showNotification('⏰ O tempo do cronômetro acabou!');
+
+                if (!playedAlertOnce) {
+                    playAlertSound();  // Toca o alerta assim que o tempo termina
+                    playedAlertOnce = true;
+                }
+
                 if (isBloco && currentBlocoIndex < blocos.length) {
                     showNextBloco();
-                } else if (isBloco && currentBlocoIndex >= blocos.length) {
-                    startAlertRepeat();
+                } else {
+                    startAlertRepeat();  // Inicia o loop de 5 minutos
                 }
             }
+
         }
 
         function showNextBloco() {
@@ -418,13 +480,18 @@
         }
 
         function startAlertRepeat() {
+            if (!playedAlertOnce) {
+                playAlertSound();
+                playedAlertOnce = true;  // Marca que o som tocou uma vez
+            }
             if (alertRepeatInterval) {
                 clearInterval(alertRepeatInterval);
             }
             alertRepeatInterval = setInterval(() => {
                 playAlertSound();
-            }, 300000);
+            }, 300000);  // Toca a cada 5 minutos
         }
+
 
         function resetTimer() {
             clearInterval(timer);
