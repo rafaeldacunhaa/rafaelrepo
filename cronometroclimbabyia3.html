@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -194,6 +195,8 @@
                     </div>
                     <button id="startButton" class="btn waves-effect waves-light btn-primary">Iniciar</button>
 
+                    <button id="notificationPermissionButton" class="btn waves-effect waves-light btn-secondary">Permitir Notificações</button>
+
                     <!-- Botões de tempos predefinidos -->
                     <div class="predefined-buttons">
                         <button class="btn predefined-time" data-time="120">2 minutos</button>
@@ -381,50 +384,98 @@
         }
 
         function updateTimer(initialDuration, isBloco) {
-            const currentTime = Date.now();
-            let remainingTime = endTime - currentTime;
-            const isTimeOver = remainingTime <= 0;
+    const currentTime = Date.now();
+    let remainingTime = endTime - currentTime;
+    const isTimeOver = remainingTime <= 0;
 
-            if (isTimeOver) {
-                remainingTime = Math.abs(remainingTime);
+    if (isTimeOver) {
+        remainingTime = Math.abs(remainingTime);
+    }
+
+    const seconds = Math.floor(remainingTime / 1000) % 60;
+    const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
+    const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+
+    document.getElementById('timeDisplay').classList.remove('hidden');
+    document.getElementById('timeDisplay').textContent = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    const progress = isTimeOver ? 100 : ((initialDuration - remainingTime) / initialDuration) * 100;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+    document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
+
+    // Alerta visual e sonoro quando restam 10% do tempo
+    if (remainingTime <= initialDuration * 0.1 && remainingTime > initialDuration * 0.1 - 1000) {
+        document.body.style.backgroundColor = '#adff2f';
+        document.getElementById('timeOutDisplay').textContent = `⚠️ Tempo acabando! ⚠️`;
+        document.getElementById('timeOutDisplay').classList.remove('hidden');
+        playFinalWarningSound(); // Toca um som de alerta ao restar 10% do tempo
+    }
+
+    if (isTimeOver) {
+    document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
+    document.body.style.backgroundColor = '#151634';
+    document.body.style.color = '#ffffff';
+    document.getElementById('currentTime').style.color = '#ffffff';
+    document.getElementById('timeDisplay').style.color = '#ffffff';
+
+    if (!playedAlertOnce) {
+        playAlertSound();  // Toca o alerta assim que o tempo termina
+        sendNotification('Tempo esgotado!'); // Envia uma notificação ao término
+        playedAlertOnce = true;
+        window.focus(); // Tenta focar a aba do cronômetro quando o tempo termina
+        alert('Tempo esgotado!'); // Alerta como fallback
+    }
+
+    if (isBloco && currentBlocoIndex < blocos.length) {
+        showNextBloco();
+    } else {
+        startAlertRepeat();  // Inicia o loop de 5 minutos
+    }
+}
+
+
+document.title = `${isTimeOver ? 'TEMPO ESGOTADO' : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`} - ${isBloco ? 'Bloco: ' + blocos[currentBlocoIndex - 1].name : 'Cronômetro'}`;
+
+
+    
+}
+
+document.getElementById('notificationPermissionButton').addEventListener('click', requestNotificationPermission);
+
+function requestNotificationPermission() {
+    if (Notification.permission !== 'granted') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                alert('Notificações ativadas com sucesso!');
+            } else {
+                alert('Notificações desativadas. Algumas funcionalidades podem não funcionar.');
             }
+        });
+    } else {
+        alert('Notificações já estão ativadas.');
+    }
+}
 
-            const seconds = Math.floor(remainingTime / 1000) % 60;
-            const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
-            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
 
-            document.getElementById('timeDisplay').classList.remove('hidden');
-            document.getElementById('timeDisplay').textContent = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+function sendNotification(message) {
+    if (Notification.permission === 'granted') {
+        new Notification('Cronômetro Climba', {
+            body: message,
+            icon: 'https://cdn-icons-png.flaticon.com/512/147/147186.png'
+        });
+    } else {
+        alert(message);
+    }
+}
 
-            const progress = isTimeOver ? 100 : ((initialDuration - remainingTime) / initialDuration) * 100;
-            document.getElementById('progressBar').style.width = `${progress}%`;
-            document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
+// Chame essa função ao iniciar o cronômetro para pedir permissão.
+requestNotificationPermission();
 
-            if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
-                document.body.style.backgroundColor = '#adff2f';
-                document.getElementById('timeOutDisplay').textContent = `⚠️ Tempo acabando! ⚠️`;
-                document.getElementById('timeOutDisplay').classList.remove('hidden');
-            }
 
-            if (isTimeOver) {
-                document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
-                document.body.style.backgroundColor = '#151634';
-                document.body.style.color = '#ffffff';
-                document.getElementById('currentTime').style.color = '#ffffff';
-                document.getElementById('timeDisplay').style.color = '#ffffff';
 
-                if (!playedAlertOnce) {
-                    playAlertSound();  // Toca o alerta assim que o tempo termina
-                    playedAlertOnce = true;
-                }
-
-                if (isBloco && currentBlocoIndex < blocos.length) {
-                    showNextBloco();
-                } else {
-                    startAlertRepeat();  // Inicia o loop de 5 minutos
-                }
-            }
-
+        function playFinalWarningSound() {
+            const warningSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+            warningSound.play();
         }
 
         function showNextBloco() {
@@ -443,6 +494,7 @@
 
         function startAlertRepeat() {
             if (!playedAlertOnce) {
+                sendNotification('Tempo esgotado!');
                 playAlertSound();
                 playedAlertOnce = true;  // Marca que o som tocou uma vez
             }
