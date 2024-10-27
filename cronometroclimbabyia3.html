@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronômetro Climba</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/147/147186.png" type="image/png">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <style>
+        body {
+            height: 100vh;
+            background-color: #f5f5f5;
+            margin-top: 100px;
+            transition: background-color 0.5s, color 0.5s;
+        }
+        .container {
+            text-align: center;
+            width: 100%;
+            padding: 0 20px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .block {
+            padding: 20px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .block-1 {
+            flex: 0 0 70%;
+        }
+        .block-2 {
+            flex: 0 0 28%;
+        }
+        .title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #74DC3B;
+        }
+        .time {
+            font-size: 10vw;
+            margin-bottom: 1rem;
+            color: #151634;
+        }
+        .bloco-name-display {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            background-color: #151634;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .progress-container {
+            margin: 20px 0;
+            height: 30px;
+            position: relative;
+        }
+        .progress {
+            height: 100%;
+        }
+        #progressBar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            line-height: 30px;
+            color: #fff;
+            text-align: center;
+        }
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #0d47a1 0%, #072452 100%);
+        }
+
+        @keyframes pulse {
+            0% { background-color: #4caf50; }
+            50% { background-color: #8bc34a; }
+            100% { background-color: #4caf50; }
+        }
+
+        #progressBar {
+            animation: pulse 2s infinite;
+        }
+
+
+
+        .predefined-buttons button {
+            margin: 5px;
+            background-color: #e0e0e0;
+            color: #151634;
+        }
+        .btn-primary {
+            background-color: #151634 !important;
+            color: #fff !important;
+        }
+        .btn-secondary {
+            background-color: #74DC3B !important;
+            color: #151634;
+        }
+        .input-field {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        label {
+            flex: 1;
+            text-align: right;
+            margin-right: 10px;
+        }
+        input[type="number"], input[type="time"] {
+            font-size: 2rem;
+            text-align: center;
+            width: 100%;
+        }
+        .bloco-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .bloco-item {
+            background-color: #e0e0e0;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #currentTime {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 4rem;
+            color: #151634;
+        }
+        #fullscreenButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 2rem;
+            color: #151634;
+        }
+        .time-out {
+            color: red;
+            font-size: 5vw;
+            animation: blink 1s step-start infinite;
+        }
+        .hidden {
+            display: none;
+        }
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+        #nextBlocoName{
+            color: #74DC3B;
+        }
+    </style>
+</head>
+<body>
+    <div id="currentTime"></div>
+    <button id="fullscreenButton">
+        <i class="material-icons">fullscreen</i>
+    </button>
+    <div class="container">
+        <div class="title">Cronômetro Climba by IA</div>
+        <div class="row" id="configSection">
+            <div class="block block-1">
+                <!-- Bloco 1: Controle de tempo e tempos predefinidos -->
+                <div id="controlPanel">
+                    <!-- Formato 2: Definir Horário Final -->
+                    <div class="input-field inline">
+                        <label for="endHour">Horário Final</label>
+                        <input id="endHour" type="time" placeholder="HH:MM">
+                    </div>
+                    <!-- Formato 1: Tempo Definido -->
+                    <div class="input-field inline">
+                        <label for="hours">Horas</label>
+                        <input id="hours" type="number" min="0" value="0" placeholder="HH">
+                    </div>
+                    <div class="input-field inline">
+                        <label for="minutes">Minutos</label>
+                        <input id="minutes" type="number" min="0" value="0" placeholder="MM">
+                    </div>
+                    <div class="input-field inline">
+                        <label for="seconds">Segundos</label>
+                        <input id="seconds" type="number" min="0" value="0" placeholder="SS">
+                    </div>
+                    <button id="startButton" class="btn waves-effect waves-light btn-primary">Iniciar</button>
+
+                    <!-- Botões de tempos predefinidos -->
+                    <div class="predefined-buttons">
+                        <button class="btn predefined-time" data-time="120">2 minutos</button>
+                        <button class="btn predefined-time" data-time="480">8 minutos</button>
+                        <button class="btn predefined-time" data-time="900">15 minutos</button>
+                        <button class="btn predefined-time" data-time="1800">30 minutos</button>
+                        <button class="btn predefined-time" data-time="3600">1 hora</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="block block-2">
+                <!-- Bloco 2: Controle dos blocos -->
+                <div id="blocosContainer">
+                    <div class="bloco">
+                        <input type="text" placeholder="Nome do Bloco" class="bloco-name">
+                        <input type="number" placeholder="Duração (min)" class="bloco-duration">
+                    </div>
+                </div>
+                <button id="addBlocoButton" class="btn waves-effect waves-light btn-primary">Adicionar Bloco</button>
+                <ul id="blocoList" class="bloco-list"></ul>
+                 <!-- Novo dropdown para seleção de reuniões predefinidas -->
+                <div>
+                    <label for="reuniaoTemplate">Selecionar Reunião Predefinida</label>
+                    <select id="reuniaoTemplate" class="browser-default">
+                        <option value="" disabled selected>Escolha uma reunião...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Exibir nome do bloco atual -->
+        <div class="bloco-name-display hidden" id="currentBlocoName"></div>
+
+        <!-- Contador e progresso -->
+        <div class="progress-container hidden" id="cronometroSection">
+            <div class="progress">
+                <div id="progressBar" class="determinate" style="width: 0%;">0%</div>
+            </div>
+            <div class="time hidden" id="timeDisplay">00:00:00</div>
+            <div class="time-out hidden" id="timeOutDisplay"></div>
+            <button id="resetButton" class="btn waves-effect waves-light btn-secondary hidden">Parar</button>
+        </div>
+
+        <!-- Exibir próximo bloco após o término -->
+        <div id="nextBlocoSection" class="hidden">
+            <div class="bloco-name-display">Próximo Bloco: <span id="nextBlocoName"></span></div>
+            <button id="startNextBlocoButton" class="btn waves-effect waves-light btn-secondary">Iniciar Próximo Bloco</button>
+        </div>
+    </div>
+    <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+
+    <script>
+        let timer, endTime, totalMilliseconds, isTimeOut = false, alertInterval, currentBlocoIndex = 0;
+        let alertRepeatInterval, playedAlertOnce = false;
+        const blocos = [];
+
+        const reunioesPredefinidas = {
+            weekly: [
+                { name: 'Reunião Escrita', duration: 8 },
+                { name: 'Leitura Reunião Escrita', duration: 8 },
+                { name: 'Revisão dos KPIs', duration: 10 },
+                { name: 'Revisão das Metas de Setor e Individuais', duration: 25 },
+                { name: 'Revisão de Combinados', duration: 5 }
+            ],
+            reuniao: [
+                { name: 'Abertura de Pauta', duration: 5 },
+                { name: 'Discussão', duration: 45 },
+                { name: 'Encerramento', duration: 10 }
+            ]
+        };
+
+        // Preencher o dropdown com reuniões predefinidas
+        const reuniaoTemplateSelect = document.getElementById('reuniaoTemplate');
+        for (const reuniao in reunioesPredefinidas) {
+            const option = document.createElement('option');
+            option.value = reuniao;
+            option.textContent = reuniao.charAt(0).toUpperCase() + reuniao.slice(1);
+            reuniaoTemplateSelect.appendChild(option);
+        }
+
+        reuniaoTemplateSelect.addEventListener('change', function() {
+            const selectedReuniao = this.value;
+            if (reunioesPredefinidas[selectedReuniao]) {
+                // Limpa blocos anteriores
+                blocos.length = 0;
+                document.getElementById('blocoList').innerHTML = '';
+
+                // Adiciona os blocos da reunião selecionada
+                reunioesPredefinidas[selectedReuniao].forEach(bloco => {
+                    blocos.push({ name: bloco.name, duration: bloco.duration * 60000 });
+                    renderBloco(bloco.name, bloco.duration * 60000);
+                });
+            }
+        });
+
+        // Exibir horário atual
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('pt-BR');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        document.getElementById('resetButton').addEventListener('click', resetTimer);
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            playedAlertOnce = false;
+            if (blocos.length > 0) {
+                startBlocosTimer();
+            } else {
+                const hours = parseInt(document.getElementById('hours').value) || 0;
+                const minutes = parseInt(document.getElementById('minutes').value) || 0;
+                const seconds = parseInt(document.getElementById('seconds').value) || 0;
+                totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000;
+
+                if (totalMilliseconds > 0) startTimer(totalMilliseconds);
+            }
+            document.getElementById('configSection').classList.add('hidden');
+            document.getElementById('cronometroSection').classList.remove('hidden');
+            document.getElementById('nextBlocoSection').classList.add('hidden');
+        });
+
+        document.getElementById('endHour').addEventListener('change', () => {
+            const endTimeInput = document.getElementById('endHour').value;
+            if (endTimeInput) {
+                const now = new Date();
+                const [hours, minutes] = endTimeInput.split(':').map(Number);
+                const endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+                const totalMilliseconds = endDateTime - now;
+                if (totalMilliseconds > 0) {
+                    startTimer(totalMilliseconds);
+                }
+            }
+        });
+
+        document.querySelectorAll('.predefined-time').forEach(button => {
+            button.addEventListener('click', () => {
+                const time = parseInt(button.getAttribute('data-time'));
+                document.getElementById('hours').value = Math.floor(time / 3600);
+                document.getElementById('minutes').value = Math.floor((time % 3600) / 60);
+                document.getElementById('seconds').value = time % 60;
+            });
+        });
+
+        document.getElementById('addBlocoButton').addEventListener('click', () => {
+            const name = document.querySelector('.bloco-name').value;
+            const duration = parseInt(document.querySelector('.bloco-duration').value) * 60000;
+
+            if (name && duration > 0) {
+                blocos.push({ name, duration });
+                renderBloco(name, duration);
+            }
+        });
+
+        function renderBloco(name, duration) {
+            const blocoElement = document.createElement('li');
+            blocoElement.classList.add('bloco-item');
+            blocoElement.innerHTML = `<span>${name}</span><span>${duration / 60000} min</span>`;
+            document.getElementById('blocoList').appendChild(blocoElement);
+        }
+
+        function startBlocosTimer() {
+            if (currentBlocoIndex < blocos.length) {
+                document.body.style.backgroundColor = '#f5f5f5';
+                document.body.style.color = '#151634';
+                document.getElementById('currentTime').style.color = '#151634';
+                document.getElementById('timeDisplay').style.color = '#151634';
+
+                const bloco = blocos[currentBlocoIndex];
+                document.getElementById('currentBlocoName').classList.remove('hidden');
+                document.getElementById('currentBlocoName').textContent = `Bloco Atual: ${bloco.name}`;
+                startTimer(bloco.duration, true);
+                currentBlocoIndex++;
+            }
+        }
+
+        function startTimer(duration, isBloco = false) {
+            clearInterval(timer);
+            document.getElementById('resetButton').classList.remove('hidden');
+            document.getElementById('timeOutDisplay').classList.add('hidden');
+            endTime = Date.now() + duration;
+            timer = setInterval(() => updateTimer(duration, isBloco), 1000);
+        }
+
+        function updateTimer(initialDuration, isBloco) {
+            const currentTime = Date.now();
+            let remainingTime = endTime - currentTime;
+            const isTimeOver = remainingTime <= 0;
+
+            if (isTimeOver) {
+                remainingTime = Math.abs(remainingTime);
+            }
+
+            const seconds = Math.floor(remainingTime / 1000) % 60;
+            const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
+            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+
+            document.getElementById('timeDisplay').classList.remove('hidden');
+            document.getElementById('timeDisplay').textContent = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            const progress = isTimeOver ? 100 : ((initialDuration - remainingTime) / initialDuration) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
+
+            if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
+                document.body.style.backgroundColor = '#adff2f';
+                document.getElementById('timeOutDisplay').textContent = `⚠️ Tempo acabando! ⚠️`;
+                document.getElementById('timeOutDisplay').classList.remove('hidden');
+            }
+
+            if (isTimeOver) {
+                document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
+                document.body.style.backgroundColor = '#151634';
+                document.body.style.color = '#ffffff';
+                document.getElementById('currentTime').style.color = '#ffffff';
+                document.getElementById('timeDisplay').style.color = '#ffffff';
+
+                if (!playedAlertOnce) {
+                    playAlertSound();  // Toca o alerta assim que o tempo termina
+                    playedAlertOnce = true;
+                }
+
+                if (isBloco && currentBlocoIndex < blocos.length) {
+                    showNextBloco();
+                } else {
+                    startAlertRepeat();  // Inicia o loop de 5 minutos
+                }
+            }
+
+        }
+
+        function showNextBloco() {
+            const nextBloco = blocos[currentBlocoIndex];
+            document.getElementById('nextBlocoName').textContent = nextBloco.name;
+            document.getElementById('nextBlocoSection').classList.remove('hidden');
+            document.getElementById('startNextBlocoButton').addEventListener('click', () => {
+                document.getElementById('nextBlocoSection').classList.add('hidden');
+                startBlocosTimer();
+            });
+        }
+
+        function playAlertSound() {
+            document.getElementById('alertSound').play();
+        }
+
+        function startAlertRepeat() {
+            if (!playedAlertOnce) {
+                playAlertSound();
+                playedAlertOnce = true;  // Marca que o som tocou uma vez
+            }
+            if (alertRepeatInterval) {
+                clearInterval(alertRepeatInterval);
+            }
+            alertRepeatInterval = setInterval(() => {
+                playAlertSound();
+            }, 300000);  // Toca a cada 5 minutos
+        }
+
+
+        function resetTimer() {
+            clearInterval(timer);
+            clearInterval(alertRepeatInterval);
+            document.getElementById('timeDisplay').textContent = '00:00:00';
+            document.getElementById('configSection').classList.remove('hidden');
+            document.getElementById('cronometroSection').classList.add('hidden');
+            document.getElementById('resetButton').classList.add('hidden');
+            document.getElementById('currentBlocoName').classList.add('hidden');
+            document.getElementById('timeOutDisplay').classList.add('hidden');
+            document.body.style.backgroundColor = '#f5f5f5';
+            document.body.style.color = '#151634';
+            document.getElementById('currentTime').style.color = '#151634';
+            document.getElementById('timeDisplay').style.color = '#151634';
+            currentBlocoIndex = 0;
+            playedAlertOnce = false;
+        }
+
+        document.getElementById('fullscreenButton').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
