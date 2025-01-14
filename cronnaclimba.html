@@ -278,6 +278,8 @@
         let currentBlocoStartTime; // Armazena o momento em que o bloco atual começou
         let originalTitle = document.title;
         let titleInterval;
+        let isPageVisible = true;
+        let worker;
 
         // Templates de reuniões predefinidas
         const reunioesPredefinidas = {
@@ -555,10 +557,61 @@
             }
         });
 
-        // Funções do timer
+        // Adicionar função para inicializar o Web Worker
+        function initWorker() {
+            if (typeof(Worker) !== "undefined") {
+                // Criar um Blob com o código do worker
+                const workerBlob = new Blob([`
+                    let timer;
+                    
+                    self.onmessage = function(e) {
+                        if (e.data.action === 'start') {
+                            clearInterval(timer);
+                            const endTime = e.data.endTime;
+                            
+                            timer = setInterval(() => {
+                                const now = Date.now();
+                                if (now >= endTime) {
+                                    self.postMessage({ type: 'timeUp' });
+                                    clearInterval(timer);
+                                }
+                            }, 100);
+                        } else if (e.data.action === 'stop') {
+                            clearInterval(timer);
+                        }
+                    };
+                `], { type: 'text/javascript' });
+
+                // Criar o worker a partir do Blob
+                worker = new Worker(URL.createObjectURL(workerBlob));
+                
+                // Listener para mensagens do worker
+                worker.onmessage = function(e) {
+                    if (e.data.type === 'timeUp' && !isPageVisible) {
+                        playAlertSound();
+                        sendNotification("Tempo finalizado!");
+                        startTitleAlert("TEMPO ESGOTADO!");
+                    }
+                };
+            }
+        }
+
+        // Atualizar a função startTimer
         function startTimer(duration, isBloco = false) {
             clearInterval(timer);
+            if (worker) {
+                worker.postMessage({ action: 'stop' });
+            }
+            
             endTime = Date.now() + duration;
+            
+            // Iniciar o worker para monitorar em segundo plano
+            if (worker) {
+                worker.postMessage({ 
+                    action: 'start', 
+                    endTime: endTime 
+                });
+            }
             
             // Atualizar imediatamente antes de iniciar o intervalo
             updateTimer(duration, isBloco);
@@ -567,7 +620,6 @@
             let lastUpdate = Date.now();
             function animate() {
                 const now = Date.now();
-                // Atualizar apenas a cada segundo
                 if (now - lastUpdate >= 1000) {
                     updateTimer(duration, isBloco);
                     lastUpdate = now;
@@ -733,7 +785,19 @@
 
         // Funções auxiliares
         function playAlertSound() {
-            document.getElementById('alertSound').play();
+            const audio = document.getElementById('alertSound');
+            // Criar uma nova promessa para tocar o som
+            const playPromise = audio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Erro ao tocar som:", error);
+                    // Tentar tocar novamente em caso de erro
+                    setTimeout(() => {
+                        audio.play().catch(e => console.log("Erro ao tocar som novamente:", e));
+                    }, 1000);
+                });
+            }
         }
 
         function resetTimer() {
@@ -974,10 +1038,26 @@
             document.title = originalTitle;
         }
 
-        // Solicitar permissão de notificação quando a página carregar
+        // Adicionar listeners para visibilidade da página
+        document.addEventListener('visibilitychange', () => {
+            isPageVisible = document.visibilityState === 'visible';
+        });
+
+        // Atualizar o DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
-            // ... código existente ...
-            requestNotificationPermission();
+            // Inicializar o worker
+            initWorker();
+            
+            // Solicitar permissão de notificação explicitamente
+            setTimeout(() => {
+                if (Notification.permission === "default") {
+                    if (confirm("Deseja receber notificações quando o timer finalizar?")) {
+                        requestNotificationPermission();
+                    }
+                }
+            }, 2000);
+            
+            // ... resto do código existente ...
         });
     </script>
 </body>
