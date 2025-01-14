@@ -7,8 +7,17 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('notificationclick', function(event) {
-    event.notification.close();
-    
+    const notification = event.notification;
+    const action = event.action;
+
+    notification.close();
+
+    if (action === 'close') {
+        // Apenas fecha a notificação
+        return;
+    }
+
+    // Se clicou na notificação ou no botão 'open'
     event.waitUntil(
         clients.matchAll({
             type: "window"
@@ -26,4 +35,13 @@ self.addEventListener('notificationclick', function(event) {
             return clients.openWindow("/");
         })
     );
+});
+
+// Personalizar o comportamento quando a notificação é fechada
+self.addEventListener('notificationclose', function(event) {
+    const notification = event.notification;
+    const data = notification.data;
+    
+    // Aqui podemos adicionar lógica adicional quando a notificação é fechada
+    console.log('Notificação fechada:', data);
 }); 
