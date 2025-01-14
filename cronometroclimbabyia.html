@@ -1,257 +1,284 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cronômetro Climba</title>
+    <title>CRONOCLIMBA 2.0</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/147/147186.png" type="image/png">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
     <style>
-        body {
-            height: 100vh;
-            background-color: #f5f5f5;
-            margin-top: 100px;
-            transition: background-color 0.5s, color 0.5s;
-        }
-        .container {
-            text-align: center;
-            width: 100%;
-            padding: 0 20px;
-        }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-        }
-        .block {
-            padding: 20px;
-            background-color: #f0f0f0;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .block-1 {
-            flex: 0 0 70%;
-        }
-        .block-2 {
-            flex: 0 0 28%;
-        }
-        .title {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: #74DC3B;
-        }
-        .time {
-            font-size: 10vw;
-            margin-bottom: 1rem;
-            color: #151634;
-        }
-        .bloco-name-display {
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-            color: #ffffff;
-            background-color: #151634;
-            padding: 10px;
-            border-radius: 8px;
-        }
-        .progress-container {
-            margin: 20px 0;
-            height: 30px;
-            position: relative;
-        }
-        .progress {
-            height: 100%;
-        }
-        #progressBar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            line-height: 30px;
-            color: #fff;
-            text-align: center;
-        }
-        .progress {
-            height: 100%;
-            background: linear-gradient(to right, #0d47a1 0%, #072452 100%);
-        }
-
         @keyframes pulse {
-            0% { background-color: #4caf50; }
-            50% { background-color: #8bc34a; }
-            100% { background-color: #4caf50; }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
-
-        #progressBar {
+        .animate-pulse-slow {
             animation: pulse 2s infinite;
         }
 
+        /* Adicionando estilos para os estados do timer */
+        .timer-ending {
+            background-color: #adff2f !important; /* Verde brilhante */
+            transition: background-color 0.5s ease;
+        }
 
+        .timer-ended {
+            background-color: #dc2626 !important; /* Vermelho */
+            color: white !important;
+            transition: background-color 0.5s ease;
+        }
 
-        .predefined-buttons button {
-            margin: 5px;
-            background-color: #e0e0e0;
-            color: #151634;
+        .timer-ended .text-gray-800,
+        .timer-ended .dark\:text-white {
+            color: white !important;
         }
-        .btn-primary {
-            background-color: #151634 !important;
-            color: #fff !important;
-        }
-        .btn-secondary {
-            background-color: #74DC3B !important;
-            color: #151634;
-        }
-        .input-field {
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-        }
-        label {
-            flex: 1;
-            text-align: right;
-            margin-right: 10px;
-        }
-        input[type="number"], input[type="time"] {
-            font-size: 2rem;
-            text-align: center;
-            width: 100%;
-        }
-        .bloco-list {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        .bloco-item {
-            background-color: #e0e0e0;
-            margin: 5px 0;
-            padding: 10px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-        }
-        #currentTime {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 4rem;
-            color: #151634;
-        }
-        #fullscreenButton {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 2rem;
-            color: #151634;
-        }
-        .time-out {
-            color: red;
-            font-size: 5vw;
-            animation: blink 1s step-start infinite;
-        }
-        .hidden {
-            display: none;
-        }
+
+        /* Animação piscante para alerta */
         @keyframes blink {
-            50% {
-                opacity: 0;
-            }
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
-        #nextBlocoName{
-            color: #74DC3B;
+
+        .blink {
+            animation: blink 1s infinite;
+        }
+
+        :root {
+            --climba-blue: #151634;
+        }
+
+        /* Atualizar todas as classes que usam indigo para usar o azul da Climba */
+        .text-indigo-400, .text-indigo-600{
+            color: var(--climba-blue) !important;
+        }
+
+         /* Atualizar todas as classes que usam indigo para usar o azul da Climba */
+         .dark .text-indigo-400, .dark .text-indigo-600 {
+            color: var(#FFFFFF) !important;
+        }
+
+        .bg-indigo-600, .hover\:bg-indigo-700:hover {
+            background-color: var(--climba-blue) !important;
+        }
+
+        .dark .bg-indigo-600{
+            background-color: #FFFFFF !important;
+        }
+
+        /* Adicionar classes para focus ring */
+        .focus\:ring-indigo-500:focus {
+            --tw-ring-color: var(--climba-blue) !important;
+        }
+
+        /* Garantir que o progressBar use a cor correta */
+        #progressBar {
+            background-color: var(--climba-blue) !important;
+        }
+
+        /* Remover variação dark que estava causando conflito */
+        .dark .text-indigo-400, .dark .text-indigo-600, .dark .bg-indigo-600 {
+            color: #FFFFFF !important;
         }
     </style>
 </head>
-<body>
-    <div id="currentTime"></div>
-    <button id="fullscreenButton">
-        <i class="material-icons">fullscreen</i>
-    </button>
-    <div class="container">
-        <div class="title">Cronômetro Climba by ClimbaIA</div>
-        <div class="row" id="configSection">
-            <div class="block block-1">
-                <!-- Bloco 1: Controle de tempo e tempos predefinidos -->
-                <div id="controlPanel">
-                    <!-- Formato 2: Definir Horário Final -->
-                    <div class="input-field inline">
-                        <label for="endHour">Horário Final</label>
-                        <input id="endHour" type="time" placeholder="HH:MM">
-                    </div>
-                    <!-- Formato 1: Tempo Definido -->
-                    <div class="input-field inline">
-                        <label for="hours">Horas</label>
-                        <input id="hours" type="number" min="0" value="0" placeholder="HH">
-                    </div>
-                    <div class="input-field inline">
-                        <label for="minutes">Minutos</label>
-                        <input id="minutes" type="number" min="0" value="0" placeholder="MM">
-                    </div>
-                    <div class="input-field inline">
-                        <label for="seconds">Segundos</label>
-                        <input id="seconds" type="number" min="0" value="0" placeholder="SS">
-                    </div>
-                    <button id="startButton" class="btn waves-effect waves-light btn-primary">Iniciar</button>
+<body class="h-full bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+    <!-- Header com relógio e controles -->
+    <header class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md px-6 py-4 z-50">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <img src="https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png" 
+                     alt="Climba Logo" 
+                     class="h-8 object-contain">
+                <div id="currentTime" class="text-4xl font-bold text-indigo-600 dark:text-indigo-400"></div>
+            </div>
+            <div class="flex gap-4 items-center">
+                <button id="toggleBlocosOverview" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 hidden">
+                    <i data-lucide="panel-left" class="w-6 h-6"></i>
+                </button>
+                <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i data-lucide="moon" class="w-6 h-6"></i>
+                </button>
+                <button id="fullscreenButton" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i data-lucide="maximize" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </header>
 
-                    <!-- Botões de tempos predefinidos -->
-                    <div class="predefined-buttons">
-                        <button class="btn predefined-time" data-time="120">2 minutos</button>
-                        <button class="btn predefined-time" data-time="480">8 minutos</button>
-                        <button class="btn predefined-time" data-time="900">15 minutos</button>
-                        <button class="btn predefined-time" data-time="1800">30 minutos</button>
-                        <button class="btn predefined-time" data-time="3600">1 hora</button>
+    <main class="container mx-auto px-4 pt-24 pb-8">
+        <!-- Título -->
+        <h1 class="text-4xl font-bold text-center text-indigo-600 dark:text-indigo-400 mb-8">
+            CRONOCLIMBA 2.0
+        </h1>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Painel Principal -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                    <i data-lucide="timer" class="w-6 h-6"></i>
+                    Configurar Timer
+                </h2>
+                
+                <!-- Tabs para escolher modo -->
+                <div class="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                    <button class="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-800 shadow text-sm font-medium" id="timerManualTab">
+                        Timer Manual
+                    </button>
+                    <button class="flex-1 py-2 px-4 text-sm font-medium text-gray-600 dark:text-gray-300" id="horarioFinalTab">
+                        Horário Final
+                    </button>
+                </div>
+
+                <!-- Adicionar os dois modos em containers separados -->
+                <div id="timerManualMode">
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="text-center relative">
+                            <i data-lucide="clock" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="number" id="hours" min="0" value="0" 
+                                   class="w-full text-3xl text-center pl-10 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horas</label>
+                        </div>
+                        <div class="text-center">
+                            <input type="number" id="minutes" min="0" value="0"
+                                   class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Minutos</label>
+                        </div>
+                        <div class="text-center">
+                            <input type="number" id="seconds" min="0" value="0"
+                                   class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Segundos</label>
+                        </div>
                     </div>
                 </div>
+
+                <div id="horarioFinalMode" class="hidden">
+                    <div class="mb-6">
+                        <input type="time" id="endHour" 
+                               class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                        <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horário Final</label>
+                    </div>
+                </div>
+
+                <!-- Botões predefinidos -->
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="120">2 min</button>
+                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="480">8 min</button>
+                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="900">15 min</button>
+                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="1800">30 min</button>
+                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="3600">1 hora</button>
+                </div>
+
+                <button id="startButton" class="w-full py-4 bg-[#151634] hover:bg-[#0d0e22] text-white rounded-lg text-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="play"></i>
+                    Iniciar
+                </button>
             </div>
 
-            <div class="block block-2">
-                <!-- Bloco 2: Controle dos blocos -->
-                <div id="blocosContainer">
-                    <div class="bloco">
-                        <input type="text" placeholder="Nome do Bloco" class="bloco-name">
-                        <input type="number" placeholder="Duração (min)" class="bloco-duration">
+            <!-- Painel de Blocos -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                    <i data-lucide="list-todo" class="w-6 h-6"></i>
+                    Blocos de Tempo
+                </h2>
+                
+                <!-- Seletor de templates -->
+                <select id="reuniaoTemplate" class="w-full mb-6 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                    <option value="" disabled selected>Templates de Reunião</option>
+                </select>
+
+                <!-- Botão para adicionar bloco -->
+                <button id="addBlocoButton" class="w-full py-3 mb-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-gray-800 dark:text-white font-medium flex items-center justify-center gap-2">
+                    <i data-lucide="plus-circle"></i>
+                    Adicionar Bloco com Tempo Atual
+                </button>
+
+                <!-- Lista de blocos -->
+                <ul id="blocoList" class="space-y-2 max-h-[300px] overflow-y-auto"></ul>
+            </div>
+        </div>
+
+        <!-- Timer em execução -->
+        <div id="timerRunning" class="fixed inset-0 bg-white dark:bg-gray-900 z-40 hidden pt-20 pb-20 transition-all duration-300">
+            <div class="h-full flex flex-col items-center justify-center p-8" id="timerContainer">
+                <!-- Navegação de blocos -->
+                <div class="flex items-center gap-4 mb-8 w-full max-w-4xl">
+                    <button id="prevBlocoButton" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <div id="currentBlocoName" class="text-3xl text-[#151634] dark:text-[#151634] flex-grow text-center"></div>
+                    <button id="nextBlocoButton" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Timer display com tamanho responsivo -->
+                <div id="timeDisplay" class="text-[20vw] leading-none font-bold text-gray-800 dark:text-white mb-8"></div>
+                
+                <!-- Barra de progresso -->
+                <div class="w-full max-w-4xl mb-12">
+                    <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div id="progressBar" class="h-full bg-[#151634] transition-all duration-1000"></div>
                     </div>
                 </div>
-                <button id="addBlocoButton" class="btn waves-effect waves-light btn-primary">Adicionar Bloco</button>
-                <ul id="blocoList" class="bloco-list"></ul>
-                 <!-- Novo dropdown para seleção de reuniões predefinidas -->
-                <div>
-                    <label for="reuniaoTemplate">Selecionar Reunião Predefinida</label>
-                    <select id="reuniaoTemplate" class="browser-default">
-                        <option value="" disabled selected>Escolha uma reunião...</option>
-                    </select>
+
+                <!-- Container para botões -->
+                <div class="flex gap-4 justify-center w-full max-w-4xl">
+                    <button id="resetButton" class="px-12 py-6 bg-red-500 hover:bg-red-600 text-white rounded-lg text-2xl font-medium transition-colors flex items-center gap-2">
+                        <i data-lucide="square"></i>
+                        Parar
+                    </button>
+                    <!-- O botão de próximo bloco será inserido aqui -->
                 </div>
             </div>
         </div>
 
-
-        <!-- Exibir nome do bloco atual -->
-        <div class="bloco-name-display hidden" id="currentBlocoName"></div>
-
-        <!-- Contador e progresso -->
-        <div class="progress-container hidden" id="cronometroSection">
-            <div class="progress">
-                <div id="progressBar" class="determinate" style="width: 0%;">0%</div>
+        <!-- Adicionar após o container de botões no timer em execução -->
+        <div id="blocosOverview" class="fixed right-0 top-20 bottom-20 w-80 bg-white dark:bg-gray-800 shadow-lg transform translate-x-full transition-all duration-300 flex flex-col z-40">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Blocos</h3>
             </div>
-            <div class="time hidden" id="timeDisplay">00:00:00</div>
-            <div class="time-out hidden" id="timeOutDisplay"></div>
-            <button id="resetButton" class="btn waves-effect waves-light btn-secondary hidden">Parar</button>
+            <div class="flex-1 overflow-y-auto p-4">
+                <ul id="blocosOverviewList" class="space-y-2">
+                    <!-- Blocos serão inseridos aqui -->
+                </ul>
+            </div>
         </div>
+    </main>
 
-        <!-- Exibir próximo bloco após o término -->
-        <div id="nextBlocoSection" class="hidden">
-            <div class="bloco-name-display">Próximo Bloco: <span id="nextBlocoName"></span></div>
-            <button id="startNextBlocoButton" class="btn waves-effect waves-light btn-secondary">Iniciar Próximo Bloco</button>
+    <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md p-4 z-50">
+        <div class="container mx-auto flex justify-center items-center gap-2 text-gray-600 dark:text-gray-300">
+            <span>Desenvolvimento por</span>
+            <img src="https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png" 
+                 alt="Climba Logo" 
+                 class="h-6 object-contain">
+            <span>com</span>
+            <i data-lucide="brain-circuit" class="text-blue-500"></i>
+            <span>IA</span>
         </div>
-    </div>
+    </footer>
+
     <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
 
     <script>
-        let timer, endTime, totalMilliseconds, isTimeOut = false, alertInterval, currentBlocoIndex = 0;
+        // Variáveis globais
+        let timer, endTime, totalMilliseconds, isTimeOut = false, currentBlocoIndex = 0;
         let alertRepeatInterval, playedAlertOnce = false;
         const blocos = [];
+        let currentBlocoStartTime; // Armazena o momento em que o bloco atual começou
 
+        // Templates de reuniões predefinidas
         const reunioesPredefinidas = {
             weekly: [
                 { name: 'Reunião Escrita', duration: 8 },
@@ -267,7 +294,237 @@
             ]
         };
 
-        // Preencher o dropdown com reuniões predefinidas
+        // Configuração do modo escuro
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            const icon = themeToggle.querySelector('i');
+            icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            lucide.createIcons();
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+
+        // Carregar preferência do tema ao iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verifica se há preferência salva, se não houver, usa a preferência do sistema
+            const savedTheme = localStorage.getItem('theme') || 
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                themeToggle.querySelector('i').textContent = 'light_mode';
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeToggle.querySelector('i').textContent = 'dark_mode';
+            }
+        });
+
+        // Atualização do relógio
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('pt-BR');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Configuração das tabs
+        const tabButtons = document.querySelectorAll('.flex.mb-6.bg-gray-100 button');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('bg-white', 'dark:bg-gray-800', 'shadow');
+                    btn.classList.add('text-gray-600', 'dark:text-gray-300');
+                });
+                button.classList.add('bg-white', 'dark:bg-gray-800', 'shadow');
+                button.classList.remove('text-gray-600', 'dark:text-gray-300');
+            });
+        });
+
+        // Adicionar após a configuração das tabs existente
+        const timerManualTab = document.getElementById('timerManualTab');
+        const horarioFinalTab = document.getElementById('horarioFinalTab');
+        const timerManualMode = document.getElementById('timerManualMode');
+        const horarioFinalMode = document.getElementById('horarioFinalMode');
+
+        timerManualTab.addEventListener('click', () => {
+            timerManualMode.classList.remove('hidden');
+            horarioFinalMode.classList.add('hidden');
+            timerManualTab.classList.add('bg-white', 'dark:bg-gray-800', 'shadow');
+            timerManualTab.classList.remove('text-gray-600', 'dark:text-gray-300');
+            horarioFinalTab.classList.remove('bg-white', 'dark:bg-gray-800', 'shadow');
+            horarioFinalTab.classList.add('text-gray-600', 'dark:text-gray-300');
+        });
+
+        horarioFinalTab.addEventListener('click', () => {
+            horarioFinalMode.classList.remove('hidden');
+            timerManualMode.classList.add('hidden');
+            horarioFinalTab.classList.add('bg-white', 'dark:bg-gray-800', 'shadow');
+            horarioFinalTab.classList.remove('text-gray-600', 'dark:text-gray-300');
+            timerManualTab.classList.remove('bg-white', 'dark:bg-gray-800', 'shadow');
+            timerManualTab.classList.add('text-gray-600', 'dark:text-gray-300');
+        });
+
+        // Atualizar o evento do startButton
+        document.getElementById('startButton').addEventListener('click', () => {
+            playedAlertOnce = false;
+            document.getElementById('timerRunning').classList.remove('hidden');
+
+            if (blocos.length > 0) {
+                // Mostrar o botão toggle apenas quando há blocos
+                document.getElementById('toggleBlocosOverview').classList.remove('hidden');
+                currentBlocoIndex = 0;
+                startBlocosTimer();
+                updateNavigationButtons();
+            } else {
+                // Esconder o botão toggle quando não há blocos
+                document.getElementById('toggleBlocosOverview').classList.add('hidden');
+                let duration;
+                
+                if (!timerManualMode.classList.contains('hidden')) {
+                    // Modo Timer Manual
+                    const hours = parseInt(document.getElementById('hours').value) || 0;
+                    const minutes = parseInt(document.getElementById('minutes').value) || 0;
+                    const seconds = parseInt(document.getElementById('seconds').value) || 0;
+                    duration = (hours * 3600 + minutes * 60 + seconds) * 1000;
+                } else {
+                    // Modo Horário Final
+                    const endTimeInput = document.getElementById('endHour').value;
+                    if (endTimeInput) {
+                        const now = new Date();
+                        const [hours, minutes] = endTimeInput.split(':').map(Number);
+                        const endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+                        
+                        // Se o horário final já passou hoje, assume que é para amanhã
+                        if (endDateTime < now) {
+                            endDateTime.setDate(endDateTime.getDate() + 1);
+                        }
+                        
+                        duration = endDateTime - now;
+                    }
+                }
+
+                if (duration > 0) {
+                    startTimer(duration);
+                }
+            }
+        });
+
+        // Botões predefinidos
+        document.querySelectorAll('.predefined-time').forEach(button => {
+            button.addEventListener('click', () => {
+                const time = parseInt(button.getAttribute('data-time'));
+                document.getElementById('hours').value = Math.floor(time / 3600);
+                document.getElementById('minutes').value = Math.floor((time % 3600) / 60);
+                document.getElementById('seconds').value = time % 60;
+            });
+        });
+
+        // Gerenciamento de blocos
+        document.getElementById('addBlocoButton').addEventListener('click', () => {
+            const hours = parseInt(document.getElementById('hours').value) || 0;
+            const minutes = parseInt(document.getElementById('minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('seconds').value) || 0;
+            const duration = (hours * 3600 + minutes * 60 + seconds) * 1000;
+
+            if (duration > 0) {
+                const blocoNumber = blocos.length + 1;
+                const name = `Bloco ${blocoNumber}`;
+                blocos.push({ name, duration });
+                renderBloco(name, duration);
+            } else {
+                alert('Configure um tempo antes de adicionar o bloco');
+            }
+        });
+
+        function renderBloco(name, duration, index = blocos.length - 1) {
+            const hours = Math.floor(duration / (1000 * 60 * 60));
+            const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+            
+            const timeString = [
+                hours > 0 ? `${hours}h` : null,
+                minutes > 0 ? `${minutes}m` : null,
+                seconds > 0 ? `${seconds}s` : null
+            ].filter(Boolean).join(' ');
+
+            const li = document.createElement('li');
+            li.className = 'flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-move';
+            li.dataset.index = index;
+            li.innerHTML = `
+                <i data-lucide="grip-vertical" class="text-gray-400 mr-2"></i>
+                <input type="text" class="bloco-name-input bg-transparent border-none focus:ring-2 focus:ring-indigo-500 rounded px-2 py-1 flex-grow text-gray-800 dark:text-white" 
+                       value="${name}">
+                <span class="text-gray-600 dark:text-gray-300 mx-4">${timeString}</span>
+                <div class="flex gap-2">
+                    <button class="delete-bloco p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+
+            // Eventos dos inputs e botões
+            const nameInput = li.querySelector('.bloco-name-input');
+            const deleteButton = li.querySelector('.delete-bloco');
+
+            nameInput.addEventListener('change', () => {
+                blocos[index].name = nameInput.value;
+            });
+
+            deleteButton.addEventListener('click', () => deleteBloco(index));
+
+            // Se já existe um item neste índice, substitui; senão, adiciona
+            const blocoList = document.getElementById('blocoList');
+            const existingItem = blocoList.children[index];
+            if (existingItem) {
+                blocoList.replaceChild(li, existingItem);
+            } else {
+                blocoList.appendChild(li);
+            }
+
+            // Inicializar os ícones Lucide
+            lucide.createIcons();
+        }
+
+        // Inicializar Sortable
+        const blocoList = document.getElementById('blocoList');
+        new Sortable(blocoList, {
+            animation: 150,
+            handle: '[data-lucide="grip-vertical"]', // Usar o ícone Lucide como handle
+            onEnd: function(evt) {
+                const item = evt.item;
+                const newIndex = evt.newIndex;
+                const oldIndex = evt.oldIndex;
+                
+                // Reordenar o array de blocos
+                const [movedBloco] = blocos.splice(oldIndex, 1);
+                blocos.splice(newIndex, 0, movedBloco);
+                
+                // Atualizar os índices
+                blocoList.innerHTML = '';
+                blocos.forEach((bloco, idx) => {
+                    renderBloco(bloco.name, bloco.duration, idx);
+                });
+                
+                // Reinicializar os ícones Lucide após reordenar
+                lucide.createIcons();
+            }
+        });
+
+        function deleteBloco(index) {
+            if (confirm('Tem certeza que deseja excluir este bloco?')) {
+                blocos.splice(index, index + 1);
+                const blocoList = document.getElementById('blocoList');
+                blocoList.removeChild(blocoList.children[index]);
+                
+                // Recriar a lista para atualizar os índices
+                blocoList.innerHTML = '';
+                blocos.forEach((bloco, idx) => {
+                    renderBloco(bloco.name, bloco.duration, idx);
+                });
+            }
+        }
+
+        // Templates de reunião
         const reuniaoTemplateSelect = document.getElementById('reuniaoTemplate');
         for (const reuniao in reunioesPredefinidas) {
             const option = document.createElement('option');
@@ -279,111 +536,47 @@
         reuniaoTemplateSelect.addEventListener('change', function() {
             const selectedReuniao = this.value;
             if (reunioesPredefinidas[selectedReuniao]) {
-                // Limpa blocos anteriores
                 blocos.length = 0;
                 document.getElementById('blocoList').innerHTML = '';
-
-                // Adiciona os blocos da reunião selecionada
-                reunioesPredefinidas[selectedReuniao].forEach(bloco => {
+                reunioesPredefinidas[selectedReuniao].forEach((bloco, index) => {
                     blocos.push({ name: bloco.name, duration: bloco.duration * 60000 });
-                    renderBloco(bloco.name, bloco.duration * 60000);
+                    renderBloco(bloco.name, bloco.duration * 60000, index);
                 });
             }
         });
 
-        // Exibir horário atual
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('currentTime').textContent = now.toLocaleTimeString('pt-BR');
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        document.getElementById('resetButton').addEventListener('click', resetTimer);
-
-        document.getElementById('startButton').addEventListener('click', () => {
-            playedAlertOnce = false;
-            if (blocos.length > 0) {
-                startBlocosTimer();
-            } else {
-                const hours = parseInt(document.getElementById('hours').value) || 0;
-                const minutes = parseInt(document.getElementById('minutes').value) || 0;
-                const seconds = parseInt(document.getElementById('seconds').value) || 0;
-                totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000;
-
-                if (totalMilliseconds > 0) startTimer(totalMilliseconds);
-            }
-            document.getElementById('configSection').classList.add('hidden');
-            document.getElementById('cronometroSection').classList.remove('hidden');
-            document.getElementById('nextBlocoSection').classList.add('hidden');
-        });
-
-        document.getElementById('endHour').addEventListener('change', () => {
-            const endTimeInput = document.getElementById('endHour').value;
-            if (endTimeInput) {
-                const now = new Date();
-                const [hours, minutes] = endTimeInput.split(':').map(Number);
-                const endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
-                const totalMilliseconds = endDateTime - now;
-                if (totalMilliseconds > 0) {
-                    startTimer(totalMilliseconds);
-                }
-            }
-        });
-
-        document.querySelectorAll('.predefined-time').forEach(button => {
-            button.addEventListener('click', () => {
-                const time = parseInt(button.getAttribute('data-time'));
-                document.getElementById('hours').value = Math.floor(time / 3600);
-                document.getElementById('minutes').value = Math.floor((time % 3600) / 60);
-                document.getElementById('seconds').value = time % 60;
-            });
-        });
-
-        document.getElementById('addBlocoButton').addEventListener('click', () => {
-            const name = document.querySelector('.bloco-name').value;
-            const duration = parseInt(document.querySelector('.bloco-duration').value) * 60000;
-
-            if (name && duration > 0) {
-                blocos.push({ name, duration });
-                renderBloco(name, duration);
-            }
-        });
-
-        function renderBloco(name, duration) {
-            const blocoElement = document.createElement('li');
-            blocoElement.classList.add('bloco-item');
-            blocoElement.innerHTML = `<span>${name}</span><span>${duration / 60000} min</span>`;
-            document.getElementById('blocoList').appendChild(blocoElement);
-        }
-
-        function startBlocosTimer() {
-            if (currentBlocoIndex < blocos.length) {
-                document.body.style.backgroundColor = '#f5f5f5';
-                document.body.style.color = '#151634';
-                document.getElementById('currentTime').style.color = '#151634';
-                document.getElementById('timeDisplay').style.color = '#151634';
-
-                const bloco = blocos[currentBlocoIndex];
-                document.getElementById('currentBlocoName').classList.remove('hidden');
-                document.getElementById('currentBlocoName').textContent = `Bloco Atual: ${bloco.name}`;
-                startTimer(bloco.duration, true);
-                currentBlocoIndex++;
-            }
-        }
-
+        // Funções do timer
         function startTimer(duration, isBloco = false) {
             clearInterval(timer);
-            document.getElementById('resetButton').classList.remove('hidden');
-            document.getElementById('timeOutDisplay').classList.add('hidden');
             endTime = Date.now() + duration;
-            timer = setInterval(() => updateTimer(duration, isBloco), 1000);
+            
+            // Atualizar imediatamente antes de iniciar o intervalo
+            updateTimer(duration, isBloco);
+            
+            // Usar requestAnimationFrame para atualizações mais suaves
+            let lastUpdate = Date.now();
+            function animate() {
+                const now = Date.now();
+                // Atualizar apenas a cada segundo
+                if (now - lastUpdate >= 1000) {
+                    updateTimer(duration, isBloco);
+                    lastUpdate = now;
+                }
+                timer = requestAnimationFrame(animate);
+            }
+            timer = requestAnimationFrame(animate);
+            
+            // Mostrar/esconder botões de navegação
+            const navigationButtons = document.querySelector('.flex.items-center.gap-4.mb-8');
+            navigationButtons.style.display = isBloco ? 'flex' : 'none';
         }
 
         function updateTimer(initialDuration, isBloco) {
             const currentTime = Date.now();
             let remainingTime = endTime - currentTime;
             const isTimeOver = remainingTime <= 0;
+            const timerContainer = document.getElementById('timerRunning');
+            const timeDisplay = document.getElementById('timeDisplay');
 
             if (isTimeOver) {
                 remainingTime = Math.abs(remainingTime);
@@ -393,85 +586,162 @@
             const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
             const hours = Math.floor(remainingTime / (1000 * 60 * 60));
 
-            document.getElementById('timeDisplay').classList.remove('hidden');
-            document.getElementById('timeDisplay').textContent = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            timeDisplay.textContent = 
+                `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
             const progress = isTimeOver ? 100 : ((initialDuration - remainingTime) / initialDuration) * 100;
             document.getElementById('progressBar').style.width = `${progress}%`;
-            document.getElementById('progressBar').textContent = `${Math.floor(progress)}%`;
 
-            if (remainingTime <= initialDuration * 0.1 && !isTimeOver) {
-                document.body.style.backgroundColor = '#adff2f';
-                document.getElementById('timeOutDisplay').textContent = `⚠️ Tempo acabando! ⚠️`;
-                document.getElementById('timeOutDisplay').classList.remove('hidden');
-            }
+            // Limpar mensagens existentes se houver mudança de estado
+            const warningMessage = document.getElementById('warningMessage');
+            const timeOverMessage = document.getElementById('timeOverMessage');
 
             if (isTimeOver) {
-                document.getElementById('timeOutDisplay').textContent = '⏰ TEMPO ESGOTADO ⏰';
-                document.body.style.backgroundColor = '#151634';
-                document.body.style.color = '#ffffff';
-                document.getElementById('currentTime').style.color = '#ffffff';
-                document.getElementById('timeDisplay').style.color = '#ffffff';
+                // Remover estado e mensagem de "acabando"
+                timerContainer.classList.remove('timer-ending');
+                if (warningMessage) warningMessage.remove();
+
+                // Adicionar estado e mensagem de "esgotado"
+                timerContainer.classList.add('timer-ended');
+                timeDisplay.classList.add('blink');
+                
+                if (!timeOverMessage) {
+                    const timeOver = document.createElement('div');
+                    timeOver.id = 'timeOverMessage';
+                    timeOver.className = 'text-4xl font-bold text-white mb-4 blink';
+                    timeOver.textContent = '⏰ TEMPO ESGOTADO ⏰';
+                    timeDisplay.parentNode.insertBefore(timeOver, timeDisplay);
+                }
 
                 if (!playedAlertOnce) {
-                    playAlertSound();  // Toca o alerta assim que o tempo termina
+                    playAlertSound();
                     playedAlertOnce = true;
+                    if (isBloco && currentBlocoIndex < blocos.length) {
+                        showNextBloco();
+                    }
                 }
+            } else if (remainingTime <= initialDuration * 0.1) {
+                // Remover mensagem de "esgotado" se existir
+                if (timeOverMessage) timeOverMessage.remove();
 
-                if (isBloco && currentBlocoIndex < blocos.length) {
-                    showNextBloco();
-                } else {
-                    startAlertRepeat();  // Inicia o loop de 5 minutos
+                // Adicionar estado e mensagem de "acabando"
+                timerContainer.classList.add('timer-ending');
+                timerContainer.classList.remove('timer-ended');
+                timeDisplay.classList.add('blink');
+                
+                if (!warningMessage) {
+                    const warning = document.createElement('div');
+                    warning.id = 'warningMessage';
+                    warning.className = 'text-4xl font-bold text-red-600 mb-4 blink';
+                    warning.textContent = '⚠️ TEMPO ACABANDO ⚠️';
+                    timeDisplay.parentNode.insertBefore(warning, timeDisplay);
                 }
+            } else {
+                // Estado normal - remover todas as mensagens e estados especiais
+                timerContainer.classList.remove('timer-ending', 'timer-ended');
+                timeDisplay.classList.remove('blink');
+                if (warningMessage) warningMessage.remove();
+                if (timeOverMessage) timeOverMessage.remove();
             }
-
         }
 
-        function showNextBloco() {
-            const nextBloco = blocos[currentBlocoIndex];
-            document.getElementById('nextBlocoName').textContent = nextBloco.name;
-            document.getElementById('nextBlocoSection').classList.remove('hidden');
-            document.getElementById('startNextBlocoButton').addEventListener('click', () => {
-                document.getElementById('nextBlocoSection').classList.add('hidden');
-                startBlocosTimer();
+        function startBlocosTimer(specificIndex = null) {
+            if (specificIndex !== null) {
+                currentBlocoIndex = specificIndex;
+            }
+            
+            if (currentBlocoIndex < blocos.length && currentBlocoIndex >= 0) {
+                const bloco = blocos[currentBlocoIndex];
+                document.getElementById('currentBlocoName').textContent = bloco.name;
+                currentBlocoStartTime = Date.now();
+                
+                // Limpar qualquer estado anterior
+                const timerContainer = document.getElementById('timerRunning');
+                timerContainer.classList.remove('timer-ending', 'timer-ended');
+                document.getElementById('timeDisplay').classList.remove('blink');
+                
+                const warningMessage = document.getElementById('warningMessage');
+                if (warningMessage) warningMessage.remove();
+                
+                const timeOverMessage = document.getElementById('timeOverMessage');
+                if (timeOverMessage) timeOverMessage.remove();
+                
+                startTimer(bloco.duration, true);
+                updateNavigationButtons();
+                updateBlocosOverview();
+            }
+        }
+
+        // Adicionar função para atualizar os botões de navegação
+        function updateNavigationButtons() {
+            const prevButton = document.getElementById('prevBlocoButton');
+            const nextButton = document.getElementById('nextBlocoButton');
+            
+            prevButton.disabled = currentBlocoIndex <= 0;
+            nextButton.disabled = currentBlocoIndex >= blocos.length - 1;
+            
+            // Atualizar visual dos botões
+            [prevButton, nextButton].forEach(button => {
+                if (button.disabled) {
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                    button.classList.remove('hover:bg-gray-300', 'dark:hover:bg-gray-600');
+                } else {
+                    button.classList.remove('opacity-50', 'cursor-not-allowed');
+                    button.classList.add('hover:bg-gray-300', 'dark:hover:bg-gray-600');
+                }
             });
         }
 
+        // Adicionar eventos para os botões de navegação
+        document.getElementById('prevBlocoButton').addEventListener('click', () => {
+            if (currentBlocoIndex > 0) {
+                currentBlocoIndex--;
+                startBlocosTimer(currentBlocoIndex);
+            }
+        });
+
+        document.getElementById('nextBlocoButton').addEventListener('click', () => {
+            if (currentBlocoIndex < blocos.length - 1) {
+                currentBlocoIndex++;
+                startBlocosTimer(currentBlocoIndex);
+            }
+        });
+
+        // Funções auxiliares
         function playAlertSound() {
             document.getElementById('alertSound').play();
         }
 
-        function startAlertRepeat() {
-            if (!playedAlertOnce) {
-                playAlertSound();
-                playedAlertOnce = true;  // Marca que o som tocou uma vez
-            }
-            if (alertRepeatInterval) {
-                clearInterval(alertRepeatInterval);
-            }
-            alertRepeatInterval = setInterval(() => {
-                playAlertSound();
-            }, 300000);  // Toca a cada 5 minutos
-        }
-
-
         function resetTimer() {
-            clearInterval(timer);
+            if (timer) {
+                cancelAnimationFrame(timer);
+            }
             clearInterval(alertRepeatInterval);
-            document.getElementById('timeDisplay').textContent = '00:00:00';
-            document.getElementById('configSection').classList.remove('hidden');
-            document.getElementById('cronometroSection').classList.add('hidden');
-            document.getElementById('resetButton').classList.add('hidden');
-            document.getElementById('currentBlocoName').classList.add('hidden');
-            document.getElementById('timeOutDisplay').classList.add('hidden');
-            document.body.style.backgroundColor = '#f5f5f5';
-            document.body.style.color = '#151634';
-            document.getElementById('currentTime').style.color = '#151634';
-            document.getElementById('timeDisplay').style.color = '#151634';
+            const timerContainer = document.getElementById('timerRunning');
+            timerContainer.classList.remove('timer-ending', 'timer-ended');
+            document.getElementById('timeDisplay').classList.remove('blink');
+            
+            const warningMessage = document.getElementById('warningMessage');
+            if (warningMessage) warningMessage.remove();
+            
+            const timeOverMessage = document.getElementById('timeOverMessage');
+            if (timeOverMessage) timeOverMessage.remove();
+            
+            timerContainer.classList.add('hidden');
+            // Esconder o botão toggle e a barra lateral ao resetar
+            document.getElementById('toggleBlocosOverview').classList.add('hidden');
+            document.getElementById('blocosOverview').classList.remove('translate-x-0');
+            
             currentBlocoIndex = 0;
             playedAlertOnce = false;
+            updateNavigationButtons();
+            
+            document.getElementById('timerContainer').style.marginRight = '0';
         }
 
+        document.getElementById('resetButton').addEventListener('click', resetTimer);
+
+        // Configuração do fullscreen
         document.getElementById('fullscreenButton').addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
@@ -481,6 +751,121 @@
                 }
             }
         });
+
+        // Adicionar validação para o input de horário final
+        document.getElementById('endHour').addEventListener('change', function() {
+            const now = new Date();
+            const [hours, minutes] = this.value.split(':').map(Number);
+            const endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+            
+            if (endDateTime < now) {
+                endDateTime.setDate(endDateTime.getDate() + 1);
+            }
+            
+            const duration = endDateTime - now;
+            if (duration <= 0) {
+                alert('Por favor, selecione um horário futuro');
+                this.value = '';
+            }
+        });
+
+        // Adicionar função showNextBloco
+        function showNextBloco() {
+            const nextBloco = blocos[currentBlocoIndex];
+            const timerContainer = document.getElementById('timerRunning');
+            const buttonsContainer = timerContainer.querySelector('.flex.gap-4.justify-center');
+            
+            // Limpar mensagens anteriores
+            const warningMessage = document.getElementById('warningMessage');
+            const timeOverMessage = document.getElementById('timeOverMessage');
+            if (warningMessage) warningMessage.remove();
+            if (timeOverMessage) timeOverMessage.remove();
+            
+            // Remover botão anterior se existir
+            const existingNextButton = document.getElementById('startNextBlocoButton');
+            if (existingNextButton) existingNextButton.remove();
+            
+            // Criar botão para próximo bloco
+            const nextBlocoButton = document.createElement('button');
+            nextBlocoButton.id = 'startNextBlocoButton';
+            nextBlocoButton.className = 'px-12 py-6 bg-green-500 hover:bg-green-600 text-white rounded-lg text-2xl font-medium transition-colors';
+            nextBlocoButton.innerHTML = `
+                <span class="block text-lg opacity-75">Próximo Bloco:</span>
+                <span class="block">${nextBloco.name}</span>
+            `;
+            
+            // Adicionar ao container de botões
+            buttonsContainer.appendChild(nextBlocoButton);
+            
+            // Adicionar evento ao botão
+            nextBlocoButton.addEventListener('click', () => {
+                nextBlocoButton.remove();
+                timerContainer.classList.remove('timer-ended');
+                document.getElementById('timeDisplay').classList.remove('blink');
+                startBlocosTimer();
+            });
+        }
+
+        // Adicionar após a inicialização do Lucide
+        function updateBlocosOverview() {
+            const blocosOverviewList = document.getElementById('blocosOverviewList');
+            blocosOverviewList.innerHTML = '';
+            
+            blocos.forEach((bloco, index) => {
+                const li = document.createElement('li');
+                li.className = `p-3 rounded-lg transition-colors ${
+                    index === currentBlocoIndex ? 'bg-[#151634] text-white' : 'bg-gray-50 dark:bg-gray-700'
+                }`;
+                
+                // Calcular o tempo formatado
+                const hours = Math.floor(bloco.duration / (1000 * 60 * 60));
+                const minutes = Math.floor((bloco.duration % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((bloco.duration % (1000 * 60)) / 1000);
+                
+                const timeString = [
+                    hours > 0 ? `${hours}h` : null,
+                    minutes > 0 ? `${minutes}m` : null,
+                    seconds > 0 ? `${seconds}s` : null
+                ].filter(Boolean).join(' ');
+
+                li.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            ${index === currentBlocoIndex ? '<i data-lucide="play" class="w-4 h-4"></i>' : ''}
+                            <span class="${index === currentBlocoIndex ? 'font-medium' : ''}">${bloco.name}</span>
+                        </div>
+                        <span class="text-sm ${index === currentBlocoIndex ? 'text-gray-200' : 'text-gray-500 dark:text-gray-400'}">${timeString}</span>
+                    </div>
+                `;
+                
+                blocosOverviewList.appendChild(li);
+            });
+            
+            lucide.createIcons();
+        }
+
+        // Adicionar toggle da barra lateral
+        document.getElementById('toggleBlocosOverview').addEventListener('click', () => {
+            const blocosOverview = document.getElementById('blocosOverview');
+            const timerContainer = document.getElementById('timerContainer');
+            const isOpen = blocosOverview.classList.contains('translate-x-0');
+            
+            blocosOverview.classList.toggle('translate-x-0');
+            
+            // Ajustar o espaço do timer quando a barra estiver aberta
+            if (!isOpen) {
+                timerContainer.style.marginRight = '320px'; // 80px (largura da barra) + um pouco de espaço
+            } else {
+                timerContainer.style.marginRight = '0';
+            }
+            
+            const icon = document.querySelector('#toggleBlocosOverview i');
+            icon.setAttribute('data-lucide', isOpen ? 'panel-left' : 'panel-right');
+            lucide.createIcons();
+        });
+
+        // Inicializar os ícones do Lucide
+        lucide.createIcons();
     </script>
 </body>
 </html>
