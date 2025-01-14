@@ -681,16 +681,19 @@
                     // Tocar o som de alerta
                     playAlertSound();
                     
-                    // Iniciar o alerta sonoro repetitivo
-                    alertRepeatInterval = setInterval(playAlertSound, 3000);
-                    
-                    // Enviar notificação do navegador
+                    // Enviar notificação
                     const message = isBloco 
                         ? `Bloco "${blocos[currentBlocoIndex].name}" finalizado!`
                         : "Tempo finalizado!";
                     
                     sendNotification(message);
                     startTitleAlert("TEMPO ESGOTADO!");
+
+                    // Configurar alerta repetitivo a cada 5 minutos (300000 ms)
+                    alertRepeatInterval = setInterval(() => {
+                        playAlertSound();
+                        sendNotification(message);
+                    }, 300000); // 5 minutos
 
                     if (isBloco && currentBlocoIndex < blocos.length) {
                         showNextBloco();
@@ -993,19 +996,39 @@
                 try {
                     // Tentar criar uma notificação mesmo em segundo plano
                     navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification("CronnaClimba 2.0", {
+                        registration.showNotification("⏰ CronnaClimba 2.0", {
                             body: message,
                             icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
-                            vibrate: [200, 100, 200],
+                            badge: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png", // Ícone menor para notificações Android
+                            image: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png", // Imagem grande na notificação
+                            vibrate: [200, 100, 200, 100, 200], // Padrão de vibração personalizado
                             tag: 'timer-notification',
                             renotify: true,
-                            requireInteraction: true, // Mantém a notificação até o usuário interagir
-                            silent: false
+                            requireInteraction: true,
+                            silent: false,
+                            actions: [ // Botões de ação na notificação
+                                {
+                                    action: 'open',
+                                    title: '👀 Visualizar',
+                                    icon: 'https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png'
+                                },
+                                {
+                                    action: 'close',
+                                    title: '❌ Fechar',
+                                    icon: 'https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png'
+                                }
+                            ],
+                            data: {
+                                timestamp: Date.now(),
+                                type: 'timer-notification'
+                            },
+                            dir: 'auto', // Direção do texto
+                            timestamp: Date.now(), // Mostra quando a notificação foi criada
                         });
                     });
                 } catch (e) {
-                    // Fallback para notificação padrão se serviceWorker não estiver disponível
-                    new Notification("CronnaClimba 2.0", {
+                    // Fallback para notificação básica
+                    new Notification("⏰ CronnaClimba 2.0", {
                         body: message,
                         icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
                         silent: false
