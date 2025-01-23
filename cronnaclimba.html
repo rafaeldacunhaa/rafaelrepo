@@ -580,11 +580,30 @@
                         if (e.data.action === 'start') {
                             clearInterval(timer);
                             const endTime = e.data.endTime;
+                            const initialDuration = e.data.duration;
+                            let warningTriggered = false;
+                            let timeUpTriggered = false;
                             
                             timer = setInterval(() => {
                                 const now = Date.now();
-                                if (now >= endTime) {
-                                    self.postMessage({ type: 'timeUp' });
+                                const remainingTime = endTime - now;
+                                
+                                // Verificar tempo esgotando (10% do tempo total)
+                                if (!warningTriggered && remainingTime <= initialDuration * 0.1 && remainingTime > 0) {
+                                    warningTriggered = true;
+                                    self.postMessage({ 
+                                        type: 'timeWarning',
+                                        message: '⚠️ TEMPO ACABANDO ⚠️'
+                                    });
+                                }
+                                
+                                // Verificar tempo esgotado
+                                if (!timeUpTriggered && remainingTime <= 0) {
+                                    timeUpTriggered = true;
+                                    self.postMessage({ 
+                                        type: 'timeUp',
+                                        message: '⏰ TEMPO ESGOTADO ⏰'
+                                    });
                                     clearInterval(timer);
                                 }
                             }, 100);
@@ -599,8 +618,14 @@
                 
                 // Listener para mensagens do worker
                 worker.onmessage = function(e) {
-                    if (e.data.type === 'timeUp' && !isPageVisible) {
-                        playAlertSound('tempoEsgotadoSound', 2);
+                    if (e.data.type === 'timeWarning') {
+                        playAlertSound('tempoAcabandoSound', 1);
+                        sendNotification("Tempo acabando!");
+                        startTitleAlert("TEMPO ACABANDO!");
+                    } else if (e.data.type === 'timeUp') {
+                        // Limpar o alerta anterior de "tempo acabando"
+                        stopTitleAlert();
+                        playAlertSound('tempoEsgotadoSound', 1);
                         sendNotification("Tempo finalizado!");
                         startTitleAlert("TEMPO ESGOTADO!");
                     }
@@ -617,11 +642,12 @@
             
             endTime = Date.now() + duration;
             
-            // Iniciar o worker para monitorar em segundo plano
+            // Iniciar o worker com duração inicial
             if (worker) {
                 worker.postMessage({ 
                     action: 'start', 
-                    endTime: endTime 
+                    endTime: endTime,
+                    duration: duration
                 });
             }
             
@@ -690,8 +716,7 @@
                 if (!playedAlertOnce) {
                     playedAlertOnce = true;
                     
-                    // Tocar o som de tempo esgotado 2 vezes
-                    playAlertSound('tempoEsgotadoSound', 2);
+                    playAlertSound('tempoEsgotadoSound', 1);
                     
                     // Enviar notificação
                     const message = isBloco 
@@ -703,7 +728,7 @@
 
                     // Configurar alerta repetitivo a cada 5 minutos
                     alertRepeatInterval = setInterval(() => {
-                        playAlertSound('tempoEsgotadoSound', 2);
+                        playAlertSound('tempoEsgotadoSound', 1);
                         sendNotification(message);
                     }, 300000); // 5 minutos
                 }
@@ -785,6 +810,16 @@
                 startTimer(bloco.duration, true);
                 updateNavigationButtons();
                 updateBlocosOverview();
+                
+                // Resetar estados de alerta ao mudar de bloco
+                stopTitleAlert();
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.getNotifications().then(notifications => {
+                            notifications.forEach(notification => notification.close());
+                        });
+                    });
+                }
             }
         }
 
@@ -851,12 +886,15 @@
         }
 
         function resetTimer() {
-            // Cancelar o timer de animação
+            // Primeiro parar o worker antes de qualquer outra coisa
+            if (worker) {
+                worker.postMessage({ action: 'stop' });
+            }
+            
+            // Limpar todos os intervalos e estados imediatamente
             if (timer) {
                 cancelAnimationFrame(timer);
             }
-            
-            // Limpar todos os intervalos e estados
             clearInterval(alertRepeatInterval);
             stopTitleAlert();
             
@@ -901,9 +939,16 @@
             updateNavigationButtons();
             document.getElementById('timerContainer').style.marginRight = '0';
             
-            // Parar o worker se estiver ativo
-            if (worker) {
-                worker.postMessage({ action: 'stop' });
+            // Limpar alertas do título
+            stopTitleAlert();
+            
+            // Limpar notificações existentes
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.getNotifications().then(notifications => {
+                        notifications.forEach(notification => notification.close());
+                    });
+                });
             }
         }
 
@@ -1136,20 +1181,25 @@
 
         // Adicionar função para alternar título
         function startTitleAlert(message) {
-            if (isTitleAlertActive) return; // Não iniciar se já estiver ativo
-            
             clearInterval(titleInterval);
             isTitleAlertActive = true;
             let isOriginal = true;
+            
+            // Garantir que o título começa com a mensagem
+            document.title = `🔔 ${message}`;
+            
             titleInterval = setInterval(() => {
                 document.title = isOriginal ? `🔔 ${message}` : originalTitle;
                 isOriginal = !isOriginal;
             }, 1000);
         }
 
-        // Parar alerta do título
+        // Melhorar a função stopTitleAlert para garantir limpeza completa
         function stopTitleAlert() {
-            clearInterval(titleInterval);
+            if (titleInterval) {
+                clearInterval(titleInterval);
+                titleInterval = null;
+            }
             document.title = originalTitle;
             isTitleAlertActive = false;
         }
