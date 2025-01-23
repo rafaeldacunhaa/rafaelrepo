@@ -120,7 +120,7 @@
     <main class="container mx-auto px-4 pt-24 pb-8">
         <!-- Título -->
         <h1 class="text-4xl font-bold text-center text-indigo-600 dark:text-indigo-400 mb-8">
-            CronnaClimba v2
+            CronnaClimba 2.0
         </h1>
 
         <div class="grid md:grid-cols-2 gap-8">
@@ -282,6 +282,7 @@
         let titleInterval;
         let isPageVisible = true;
         let worker;
+        let isTitleAlertActive = false;
 
         // Templates de reuniões predefinidas
         const reunioesPredefinidas = {
@@ -705,10 +706,11 @@
                         playAlertSound('tempoEsgotadoSound', 2);
                         sendNotification(message);
                     }, 300000); // 5 minutos
+                }
 
-                    if (isBloco && currentBlocoIndex < blocos.length) {
-                        showNextBloco();
-                    }
+                // Mover para fora do if (!playedAlertOnce) para sempre verificar
+                if (isBloco && currentBlocoIndex < blocos.length - 1) {
+                    showNextBloco();
                 }
             } else if (remainingTime <= initialDuration * 0.1) {
                 // Remover mensagem de "esgotado" se existir
@@ -749,21 +751,37 @@
             }
             
             if (currentBlocoIndex < blocos.length && currentBlocoIndex >= 0) {
+                // Limpar todos os estados anteriores
+                clearInterval(alertRepeatInterval);
+                stopTitleAlert();
+                
+                // Resetar variáveis de controle
+                playedAlertOnce = false;
+                window.playedEndingSound = false;
+                isTimeOut = false;
+                
+                // Remover botão de próximo bloco se existir
+                const nextBlocoButton = document.getElementById('startNextBlocoButton');
+                if (nextBlocoButton) nextBlocoButton.remove();
+                
                 const bloco = blocos[currentBlocoIndex];
                 document.getElementById('currentBlocoName').textContent = bloco.name;
                 currentBlocoStartTime = Date.now();
                 
-                // Limpar qualquer estado anterior
+                // Limpar estados visuais
                 const timerContainer = document.getElementById('timerRunning');
+                const timeDisplay = document.getElementById('timeDisplay');
                 timerContainer.classList.remove('timer-ending', 'timer-ended');
-                document.getElementById('timeDisplay').classList.remove('blink');
+                timeDisplay.classList.remove('blink');
                 
+                // Limpar mensagens
                 const warningMessage = document.getElementById('warningMessage');
                 if (warningMessage) warningMessage.remove();
                 
                 const timeOverMessage = document.getElementById('timeOverMessage');
                 if (timeOverMessage) timeOverMessage.remove();
                 
+                // Iniciar novo timer
                 startTimer(bloco.duration, true);
                 updateNavigationButtons();
                 updateBlocosOverview();
@@ -833,32 +851,60 @@
         }
 
         function resetTimer() {
+            // Cancelar o timer de animação
             if (timer) {
                 cancelAnimationFrame(timer);
             }
-            clearInterval(alertRepeatInterval);
-            const timerContainer = document.getElementById('timerRunning');
-            timerContainer.classList.remove('timer-ending', 'timer-ended');
-            document.getElementById('timeDisplay').classList.remove('blink');
             
+            // Limpar todos os intervalos e estados
+            clearInterval(alertRepeatInterval);
+            stopTitleAlert();
+            
+            const timerContainer = document.getElementById('timerRunning');
+            const timeDisplay = document.getElementById('timeDisplay');
+            
+            // Limpar todos os estados visuais
+            timerContainer.classList.remove('timer-ending', 'timer-ended');
+            timeDisplay.classList.remove('blink');
+            
+            // Limpar todas as mensagens
             const warningMessage = document.getElementById('warningMessage');
             if (warningMessage) warningMessage.remove();
             
             const timeOverMessage = document.getElementById('timeOverMessage');
             if (timeOverMessage) timeOverMessage.remove();
             
+            // Remover botão de próximo bloco se existir
+            const nextBlocoButton = document.getElementById('startNextBlocoButton');
+            if (nextBlocoButton) nextBlocoButton.remove();
+            
+            // Esconder containers
             timerContainer.classList.add('hidden');
-            // Esconder o botão toggle e a barra lateral ao resetar
             document.getElementById('toggleBlocosOverview').classList.add('hidden');
             document.getElementById('blocosOverview').classList.remove('translate-x-0');
             
+            // Resetar todas as variáveis de controle
             currentBlocoIndex = 0;
             playedAlertOnce = false;
-            updateNavigationButtons();
-            
-            document.getElementById('timerContainer').style.marginRight = '0';
-            stopTitleAlert();
             window.playedEndingSound = false;
+            endTime = null;
+            isTimeOut = false;
+            currentBlocoStartTime = null;
+            
+            // Limpar campos de input
+            document.getElementById('hours').value = '0';
+            document.getElementById('minutes').value = '0';
+            document.getElementById('seconds').value = '0';
+            document.getElementById('endHour').value = '';
+            
+            // Atualizar UI
+            updateNavigationButtons();
+            document.getElementById('timerContainer').style.marginRight = '0';
+            
+            // Parar o worker se estiver ativo
+            if (worker) {
+                worker.postMessage({ action: 'stop' });
+            }
         }
 
         document.getElementById('resetButton').addEventListener('click', resetTimer);
@@ -893,7 +939,12 @@
 
         // Adicionar função showNextBloco
         function showNextBloco() {
-            const nextBloco = blocos[currentBlocoIndex];
+            // Verificar se existe próximo bloco
+            if (currentBlocoIndex + 1 >= blocos.length) {
+                return; // Se não houver próximo bloco, não faz nada
+            }
+
+            const nextBloco = blocos[currentBlocoIndex + 1]; // Pegar o próximo bloco ao invés do atual
             const timerContainer = document.getElementById('timerRunning');
             const buttonsContainer = timerContainer.querySelector('.flex.gap-4.justify-center');
             
@@ -924,6 +975,14 @@
                 nextBlocoButton.remove();
                 timerContainer.classList.remove('timer-ended');
                 document.getElementById('timeDisplay').classList.remove('blink');
+                
+                // Resetar estados antes de mudar de bloco
+                playedAlertOnce = false;
+                window.playedEndingSound = false;
+                clearInterval(alertRepeatInterval);
+                stopTitleAlert();
+                
+                currentBlocoIndex++; // Incrementar o índice antes de iniciar o próximo bloco
                 startBlocosTimer();
             });
         }
@@ -1077,7 +1136,10 @@
 
         // Adicionar função para alternar título
         function startTitleAlert(message) {
+            if (isTitleAlertActive) return; // Não iniciar se já estiver ativo
+            
             clearInterval(titleInterval);
+            isTitleAlertActive = true;
             let isOriginal = true;
             titleInterval = setInterval(() => {
                 document.title = isOriginal ? `🔔 ${message}` : originalTitle;
@@ -1089,6 +1151,7 @@
         function stopTitleAlert() {
             clearInterval(titleInterval);
             document.title = originalTitle;
+            isTitleAlertActive = false;
         }
 
         // Adicionar listeners para visibilidade da página
@@ -1112,6 +1175,86 @@
             
             // ... resto do código existente ...
         });
+
+        // Adicionar após as variáveis globais
+        document.addEventListener('keydown', function(e) {
+            // Verificar se não está em um input de texto
+            const isInputFocused = document.activeElement.tagName === 'INPUT' && 
+                                  document.activeElement.type !== 'number';
+            
+            // Se estiver em um input de texto, só processa Enter
+            if (isInputFocused && e.key !== 'Enter') {
+                return;
+            }
+
+            // Timer em execução
+            if (!document.getElementById('timerRunning').classList.contains('hidden')) {
+                // ESC - Parar timer
+                if (e.key === 'Escape') {
+                    resetTimer();
+                }
+                // ENTER - Próximo bloco (se existir o botão)
+                else if (e.key === 'Enter') {
+                    const nextButton = document.getElementById('startNextBlocoButton');
+                    if (nextButton) {
+                        nextButton.click();
+                    }
+                }
+            }
+            // Tela de configuração
+            else {
+                // CMD/CTRL + ENTER - Adicionar bloco
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    document.getElementById('addBlocoButton').click();
+                }
+                // ENTER - Iniciar timer
+                else if (e.key === 'Enter') {
+                    document.getElementById('startButton').click();
+                }
+            }
+        });
+
+        // Adicionar tooltips para mostrar os atalhos
+        document.getElementById('startButton').setAttribute('title', 'Pressione Enter para iniciar');
+        document.getElementById('addBlocoButton').setAttribute('title', 'Pressione Cmd/Ctrl + Enter para adicionar bloco');
+        document.getElementById('resetButton').setAttribute('title', 'Pressione ESC para parar');
+
+        // Adicionar classe para mostrar o foco via teclado
+        const style = document.createElement('style');
+        style.textContent = `
+            /* Estilo para mostrar foco via teclado */
+            button:focus-visible {
+                outline: 2px solid var(--climba-blue);
+                outline-offset: 2px;
+            }
+            
+            /* Esconder outline quando foco for via mouse */
+            button:focus:not(:focus-visible) {
+                outline: none;
+            }
+
+            /* Tooltip personalizado */
+            [title] {
+                position: relative;
+            }
+
+            [title]:hover::after {
+                content: attr(title);
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 5px 10px;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                border-radius: 4px;
+                font-size: 12px;
+                white-space: nowrap;
+                z-index: 1000;
+                margin-bottom: 5px;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
