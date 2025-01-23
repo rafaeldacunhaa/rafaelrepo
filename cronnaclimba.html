@@ -269,6 +269,8 @@
     </footer>
 
     <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+    <audio id="tempoEsgotadoSound" src="tempo-esgotado.mp3"></audio>
+    <audio id="tempoAcabandoSound" src="tempo-acabando.mp3"></audio>
 
     <script>
         // Variáveis globais
@@ -597,7 +599,7 @@
                 // Listener para mensagens do worker
                 worker.onmessage = function(e) {
                     if (e.data.type === 'timeUp' && !isPageVisible) {
-                        playAlertSound();
+                        playAlertSound('tempoEsgotadoSound', 2);
                         sendNotification("Tempo finalizado!");
                         startTitleAlert("TEMPO ESGOTADO!");
                     }
@@ -687,8 +689,8 @@
                 if (!playedAlertOnce) {
                     playedAlertOnce = true;
                     
-                    // Tocar o som de alerta
-                    playAlertSound();
+                    // Tocar o som de tempo esgotado 2 vezes
+                    playAlertSound('tempoEsgotadoSound', 2);
                     
                     // Enviar notificação
                     const message = isBloco 
@@ -698,9 +700,9 @@
                     sendNotification(message);
                     startTitleAlert("TEMPO ESGOTADO!");
 
-                    // Configurar alerta repetitivo a cada 5 minutos (300000 ms)
+                    // Configurar alerta repetitivo a cada 5 minutos
                     alertRepeatInterval = setInterval(() => {
-                        playAlertSound();
+                        playAlertSound('tempoEsgotadoSound', 2);
                         sendNotification(message);
                     }, 300000); // 5 minutos
 
@@ -724,12 +726,20 @@
                     warning.textContent = '⚠️ TEMPO ACABANDO ⚠️';
                     timeDisplay.parentNode.insertBefore(warning, timeDisplay);
                 }
+
+                // Adicionar variável para controlar se o som de tempo acabando já foi tocado
+                if (!window.playedEndingSound) {
+                    window.playedEndingSound = true;
+                    playAlertSound('tempoAcabandoSound', 1);
+                }
             } else {
                 // Estado normal - remover todas as mensagens e estados especiais
                 timerContainer.classList.remove('timer-ending', 'timer-ended');
                 timeDisplay.classList.remove('blink');
                 if (warningMessage) warningMessage.remove();
                 if (timeOverMessage) timeOverMessage.remove();
+                // Resetar a flag do som de tempo acabando quando voltar ao estado normal
+                window.playedEndingSound = false;
             }
         }
 
@@ -796,20 +806,30 @@
         });
 
         // Funções auxiliares
-        function playAlertSound() {
-            const audio = document.getElementById('alertSound');
-            // Criar uma nova promessa para tocar o som
-            const playPromise = audio.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Erro ao tocar som:", error);
-                    // Tentar tocar novamente em caso de erro
-                    setTimeout(() => {
-                        audio.play().catch(e => console.log("Erro ao tocar som novamente:", e));
-                    }, 1000);
-                });
+        function playAlertSound(sound, repetitions = 1) {
+            const audio = document.getElementById(sound);
+            let played = 0;
+
+            function playNext() {
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        played++;
+                        if (played < repetitions) {
+                            audio.addEventListener('ended', playNext, { once: true });
+                        }
+                    }).catch(error => {
+                        console.log("Erro ao tocar som:", error);
+                        // Tentar tocar novamente em caso de erro
+                        setTimeout(() => {
+                            audio.play().catch(e => console.log("Erro ao tocar som novamente:", e));
+                        }, 1000);
+                    });
+                }
             }
+
+            playNext();
         }
 
         function resetTimer() {
@@ -838,6 +858,7 @@
             
             document.getElementById('timerContainer').style.marginRight = '0';
             stopTitleAlert();
+            window.playedEndingSound = false;
         }
 
         document.getElementById('resetButton').addEventListener('click', resetTimer);

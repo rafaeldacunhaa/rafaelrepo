@@ -120,7 +120,7 @@
     <main class="container mx-auto px-4 pt-24 pb-8">
         <!-- Título -->
         <h1 class="text-4xl font-bold text-center text-indigo-600 dark:text-indigo-400 mb-8">
-            CronnaClimba 2.0
+            CronnaClimba v2
         </h1>
 
         <div class="grid md:grid-cols-2 gap-8">
@@ -269,6 +269,8 @@
     </footer>
 
     <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+    <audio id="tempoEsgotadoSound" src="tempo-esgotado.mp3"></audio>
+    <audio id="tempoAcabandoSound" src="tempo-acabando.mp3"></audio>
 
     <script>
         // Variáveis globais
@@ -276,9 +278,22 @@
         let alertRepeatInterval, playedAlertOnce = false;
         const blocos = [];
         let currentBlocoStartTime; // Armazena o momento em que o bloco atual começou
+        let originalTitle = document.title;
+        let titleInterval;
+        let isPageVisible = true;
+        let worker;
 
         // Templates de reuniões predefinidas
         const reunioesPredefinidas = {
+            daily: [
+                { name: 'Daily - Time 1', duration: 3 },
+                { name: 'Daily - Time 2', duration: 3 },
+                { name: 'Daily - Time 3', duration: 3 },
+                { name: 'Daily - Time 4', duration: 3 },
+                { name: 'Daily - Time 5', duration: 3 },
+                { name: 'Daily - Time 6', duration: 3 },
+                { name: 'Daily - Time 7', duration: 3 }
+            ],
             weekly: [
                 { name: 'Reunião Escrita', duration: 8 },
                 { name: 'Leitura Reunião Escrita', duration: 8 },
@@ -373,6 +388,7 @@
 
         // Atualizar o evento do startButton
         document.getElementById('startButton').addEventListener('click', () => {
+            stopTitleAlert(); // Garantir que o título está normal ao iniciar
             playedAlertOnce = false;
             document.getElementById('timerRunning').classList.remove('hidden');
 
@@ -552,10 +568,61 @@
             }
         });
 
-        // Funções do timer
+        // Adicionar função para inicializar o Web Worker
+        function initWorker() {
+            if (typeof(Worker) !== "undefined") {
+                // Criar um Blob com o código do worker
+                const workerBlob = new Blob([`
+                    let timer;
+                    
+                    self.onmessage = function(e) {
+                        if (e.data.action === 'start') {
+                            clearInterval(timer);
+                            const endTime = e.data.endTime;
+                            
+                            timer = setInterval(() => {
+                                const now = Date.now();
+                                if (now >= endTime) {
+                                    self.postMessage({ type: 'timeUp' });
+                                    clearInterval(timer);
+                                }
+                            }, 100);
+                        } else if (e.data.action === 'stop') {
+                            clearInterval(timer);
+                        }
+                    };
+                `], { type: 'text/javascript' });
+
+                // Criar o worker a partir do Blob
+                worker = new Worker(URL.createObjectURL(workerBlob));
+                
+                // Listener para mensagens do worker
+                worker.onmessage = function(e) {
+                    if (e.data.type === 'timeUp' && !isPageVisible) {
+                        playAlertSound('tempoEsgotadoSound', 2);
+                        sendNotification("Tempo finalizado!");
+                        startTitleAlert("TEMPO ESGOTADO!");
+                    }
+                };
+            }
+        }
+
+        // Atualizar a função startTimer
         function startTimer(duration, isBloco = false) {
             clearInterval(timer);
+            if (worker) {
+                worker.postMessage({ action: 'stop' });
+            }
+            
             endTime = Date.now() + duration;
+            
+            // Iniciar o worker para monitorar em segundo plano
+            if (worker) {
+                worker.postMessage({ 
+                    action: 'start', 
+                    endTime: endTime 
+                });
+            }
             
             // Atualizar imediatamente antes de iniciar o intervalo
             updateTimer(duration, isBloco);
@@ -564,7 +631,6 @@
             let lastUpdate = Date.now();
             function animate() {
                 const now = Date.now();
-                // Atualizar apenas a cada segundo
                 if (now - lastUpdate >= 1000) {
                     updateTimer(duration, isBloco);
                     lastUpdate = now;
@@ -621,8 +687,25 @@
                 }
 
                 if (!playedAlertOnce) {
-                    playAlertSound();
                     playedAlertOnce = true;
+                    
+                    // Tocar o som de tempo esgotado 2 vezes
+                    playAlertSound('tempoEsgotadoSound', 2);
+                    
+                    // Enviar notificação
+                    const message = isBloco 
+                        ? `Bloco "${blocos[currentBlocoIndex].name}" finalizado!`
+                        : "Tempo finalizado!";
+                    
+                    sendNotification(message);
+                    startTitleAlert("TEMPO ESGOTADO!");
+
+                    // Configurar alerta repetitivo a cada 5 minutos
+                    alertRepeatInterval = setInterval(() => {
+                        playAlertSound('tempoEsgotadoSound', 2);
+                        sendNotification(message);
+                    }, 300000); // 5 minutos
+
                     if (isBloco && currentBlocoIndex < blocos.length) {
                         showNextBloco();
                     }
@@ -643,12 +726,20 @@
                     warning.textContent = '⚠️ TEMPO ACABANDO ⚠️';
                     timeDisplay.parentNode.insertBefore(warning, timeDisplay);
                 }
+
+                // Adicionar variável para controlar se o som de tempo acabando já foi tocado
+                if (!window.playedEndingSound) {
+                    window.playedEndingSound = true;
+                    playAlertSound('tempoAcabandoSound', 1);
+                }
             } else {
                 // Estado normal - remover todas as mensagens e estados especiais
                 timerContainer.classList.remove('timer-ending', 'timer-ended');
                 timeDisplay.classList.remove('blink');
                 if (warningMessage) warningMessage.remove();
                 if (timeOverMessage) timeOverMessage.remove();
+                // Resetar a flag do som de tempo acabando quando voltar ao estado normal
+                window.playedEndingSound = false;
             }
         }
 
@@ -715,8 +806,30 @@
         });
 
         // Funções auxiliares
-        function playAlertSound() {
-            document.getElementById('alertSound').play();
+        function playAlertSound(sound, repetitions = 1) {
+            const audio = document.getElementById(sound);
+            let played = 0;
+
+            function playNext() {
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        played++;
+                        if (played < repetitions) {
+                            audio.addEventListener('ended', playNext, { once: true });
+                        }
+                    }).catch(error => {
+                        console.log("Erro ao tocar som:", error);
+                        // Tentar tocar novamente em caso de erro
+                        setTimeout(() => {
+                            audio.play().catch(e => console.log("Erro ao tocar som novamente:", e));
+                        }, 1000);
+                    });
+                }
+            }
+
+            playNext();
         }
 
         function resetTimer() {
@@ -744,6 +857,8 @@
             updateNavigationButtons();
             
             document.getElementById('timerContainer').style.marginRight = '0';
+            stopTitleAlert();
+            window.playedEndingSound = false;
         }
 
         document.getElementById('resetButton').addEventListener('click', resetTimer);
@@ -873,6 +988,130 @@
 
         // Inicializar os ícones do Lucide
         lucide.createIcons();
+
+        // Adicionar função para solicitar permissão de notificação
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("Este navegador não suporta notificações");
+                return;
+            }
+
+            // Registrar service worker para notificações em segundo plano
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').then(function(registration) {
+                    console.log('ServiceWorker registrado com sucesso');
+                }).catch(function(err) {
+                    console.log('Erro ao registrar ServiceWorker:', err);
+                });
+            }
+
+            // Solicitar permissão se ainda não foi concedida ou negada
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        console.log("Permissão para notificações concedida!");
+                    }
+                });
+            }
+        }
+
+        // Adicionar função para enviar notificação
+        function sendNotification(message) {
+            if (!("Notification" in window)) {
+                return;
+            }
+
+            // Se a permissão já foi concedida
+            if (Notification.permission === "granted") {
+                try {
+                    // Tentar criar uma notificação mesmo em segundo plano
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification("⏰ CronnaClimba 2.0", {
+                            body: message,
+                            icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
+                            badge: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png", // Ícone menor para notificações Android
+                            image: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png", // Imagem grande na notificação
+                            vibrate: [200, 100, 200, 100, 200], // Padrão de vibração personalizado
+                            tag: 'timer-notification',
+                            renotify: true,
+                            requireInteraction: true,
+                            silent: false,
+                            actions: [ // Botões de ação na notificação
+                                {
+                                    action: 'open',
+                                    title: '👀 Visualizar',
+                                    icon: 'https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png'
+                                },
+                                {
+                                    action: 'close',
+                                    title: '❌ Fechar',
+                                    icon: 'https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png'
+                                }
+                            ],
+                            data: {
+                                timestamp: Date.now(),
+                                type: 'timer-notification'
+                            },
+                            dir: 'auto', // Direção do texto
+                            timestamp: Date.now(), // Mostra quando a notificação foi criada
+                        });
+                    });
+                } catch (e) {
+                    // Fallback para notificação básica
+                    new Notification("⏰ CronnaClimba 2.0", {
+                        body: message,
+                        icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
+                        silent: false
+                    });
+                }
+            }
+            // Se a permissão ainda não foi pedida
+            else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        sendNotification(message);
+                    }
+                });
+            }
+        }
+
+        // Adicionar função para alternar título
+        function startTitleAlert(message) {
+            clearInterval(titleInterval);
+            let isOriginal = true;
+            titleInterval = setInterval(() => {
+                document.title = isOriginal ? `🔔 ${message}` : originalTitle;
+                isOriginal = !isOriginal;
+            }, 1000);
+        }
+
+        // Parar alerta do título
+        function stopTitleAlert() {
+            clearInterval(titleInterval);
+            document.title = originalTitle;
+        }
+
+        // Adicionar listeners para visibilidade da página
+        document.addEventListener('visibilitychange', () => {
+            isPageVisible = document.visibilityState === 'visible';
+        });
+
+        // Atualizar o DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar o worker
+            initWorker();
+            
+            // Solicitar permissão de notificação explicitamente
+            setTimeout(() => {
+                if (Notification.permission === "default") {
+                    if (confirm("Deseja receber notificações quando o timer finalizar?")) {
+                        requestNotificationPermission();
+                    }
+                }
+            }, 2000);
+            
+            // ... resto do código existente ...
+        });
     </script>
 </body>
 </html>
