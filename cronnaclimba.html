@@ -236,7 +236,7 @@
 
         <!-- Timer em execução -->
         <div id="timerRunning" class="fixed inset-0 bg-white dark:bg-gray-900 z-40 hidden pt-20 pb-20 transition-all duration-300">
-            <div class="h-full flex flex-col items-center justify-center p-8" id="timerContainer">
+            <div class="h-full flex flex-col items-center justify-center transition-all duration-300" id="timerContainer">
                 <!-- Navegação de blocos -->
                 <div class="flex items-center gap-4 mb-8 w-full max-w-4xl">
                     <button id="prevBlocoButton" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50">
@@ -267,17 +267,17 @@
                     <!-- O botão de próximo bloco será inserido aqui -->
                 </div>
             </div>
-        </div>
 
-        <!-- Adicionar após o container de botões no timer em execução -->
-        <div id="blocosOverview" class="fixed right-0 top-20 bottom-20 w-80 bg-white dark:bg-gray-800 shadow-lg transform translate-x-full transition-all duration-300 flex flex-col z-40">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Blocos</h3>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4">
-                <ul id="blocosOverviewList" class="space-y-2">
-                    <!-- Blocos serão inseridos aqui -->
-                </ul>
+            <!-- Mover o blocosOverview para dentro do timerRunning -->
+            <div id="blocosOverview" class="fixed right-0 top-20 bottom-20 w-80 bg-white dark:bg-gray-800 shadow-lg transform translate-x-full transition-all duration-300 flex flex-col">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Blocos</h3>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <ul id="blocosOverviewList" class="space-y-2">
+                        <!-- Blocos serão inseridos aqui -->
+                    </ul>
+                </div>
             </div>
         </div>
     </main>
@@ -419,16 +419,23 @@
             playedAlertOnce = false;
             document.getElementById('timerRunning').classList.remove('hidden');
 
-            
             if (blocos.length > 0) {
-                // Mostrar o botão toggle apenas quando há blocos
+                // Mostrar o botão toggle e o blocosOverview
                 document.getElementById('toggleBlocosOverview').classList.remove('hidden');
+                const blocosOverview = document.getElementById('blocosOverview');
+                blocosOverview.classList.remove('translate-x-full');
+                document.getElementById('timerContainer').style.width = 'calc(100% - 320px)';
+                
                 currentBlocoIndex = 0;
                 startBlocosTimer();
                 updateNavigationButtons();
+                updateBlocosOverview();
             } else {
                 // Esconder o botão toggle quando não há blocos
                 document.getElementById('toggleBlocosOverview').classList.add('hidden');
+                document.getElementById('blocosOverview').classList.add('translate-x-full');
+                document.getElementById('timerContainer').style.width = '100%';
+                
                 let duration;
                 
                 if (!timerManualMode.classList.contains('hidden')) {
@@ -727,8 +734,15 @@
             const minutes = Math.floor(remainingTime / (1000 * 60)) % 60;
             const hours = Math.floor(remainingTime / (1000 * 60 * 60));
 
-            timeDisplay.textContent = 
-                `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            // Formatar o tempo baseado na duração
+            let timeString;
+            if (initialDuration >= 3600000) { // Se a duração inicial for 1 hora ou mais
+                timeString = `${isTimeOver ? '-' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else {
+                timeString = `${isTimeOver ? '-' : ''}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+
+            timeDisplay.textContent = timeString;
 
             const progress = isTimeOver ? 100 : ((initialDuration - remainingTime) / initialDuration) * 100;
             document.getElementById('progressBar').style.width = `${progress}%`;
@@ -957,10 +971,11 @@
             const nextBlocoButton = document.getElementById('startNextBlocoButton');
             if (nextBlocoButton) nextBlocoButton.remove();
             
-            // Esconder containers
+            // Esconder containers e resetar estados
             timerContainer.classList.add('hidden');
             document.getElementById('toggleBlocosOverview').classList.add('hidden');
-            document.getElementById('blocosOverview').classList.remove('translate-x-0');
+            document.getElementById('blocosOverview').classList.add('translate-x-full');
+            document.getElementById('timerContainer').style.width = '100%';
             
             // Resetar todas as variáveis de controle
             currentBlocoIndex = 0;
@@ -978,7 +993,6 @@
             
             // Atualizar UI
             updateNavigationButtons();
-            document.getElementById('timerContainer').style.marginRight = '0';
             
             // Limpar alertas do título
             stopTitleAlert();
@@ -1115,15 +1129,15 @@
         document.getElementById('toggleBlocosOverview').addEventListener('click', () => {
             const blocosOverview = document.getElementById('blocosOverview');
             const timerContainer = document.getElementById('timerContainer');
-            const isOpen = blocosOverview.classList.contains('translate-x-0');
+            const isOpen = !blocosOverview.classList.contains('translate-x-full');
             
-            blocosOverview.classList.toggle('translate-x-0');
+            blocosOverview.classList.toggle('translate-x-full');
             
-            // Ajustar o espaço do timer quando a barra estiver aberta
-            if (!isOpen) {
-                timerContainer.style.marginRight = '320px'; // 80px (largura da barra) + um pouco de espaço
+            // Ajustar o espaço do timer
+            if (isOpen) {
+                timerContainer.style.width = '100%';
             } else {
-                timerContainer.style.marginRight = '0';
+                timerContainer.style.width = 'calc(100% - 320px)';
             }
             
             const icon = document.querySelector('#toggleBlocosOverview i');
