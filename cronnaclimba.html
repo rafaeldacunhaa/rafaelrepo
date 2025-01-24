@@ -767,11 +767,11 @@
                     sendNotification(message);
                     startTitleAlert("TEMPO ESGOTADO!");
 
-                    // Configurar alerta repetitivo a cada 5 minutos
+                    // Configurar alerta repetitivo a cada 2 minutos
                     alertRepeatInterval = setInterval(() => {
                         playAlertSound('tempoEsgotadoSound', 1);
                         sendNotification(message);
-                    }, 300000); // 5 minutos
+                    }, 150000); // 2 minutos
                 }
 
                 // Mover para fora do if (!playedAlertOnce) para sempre verificar
