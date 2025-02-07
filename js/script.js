@@ -958,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(progressStyles);
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('sw.js')
             .then(function(registration) {
                 console.log('Service Worker registrado com sucesso:', registration);
                 
