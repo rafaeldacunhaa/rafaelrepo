@@ -6,6 +6,7 @@
     <title>CronnaClimba 2.0</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/147/147186.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -17,90 +18,6 @@
             }
         }
     </script>
-    <style>
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .animate-pulse-slow {
-            animation: pulse 2s infinite;
-        }
-
-        /* Adicionando estilos para os estados do timer */
-        .timer-ending {
-            background-color: #adff2f !important; /* Verde brilhante */
-            transition: background-color 0.5s ease;
-        }
-
-        .timer-ended {
-            background-color: #dc2626 !important; /* Vermelho */
-            color: white !important;
-            transition: background-color 0.5s ease;
-        }
-
-        .timer-ended .text-gray-800,
-        .timer-ended .dark\:text-white {
-            color: white !important;
-        }
-
-        /* Animação piscante para alerta */
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .blink {
-            animation: blink 1s infinite;
-        }
-
-        :root {
-            --climba-blue: #151634;
-        }
-
-        /* Atualizar todas as classes que usam indigo para usar o azul da Climba */
-        .text-indigo-400, .text-indigo-600{
-            color: var(--climba-blue) !important;
-        }
-
-         /* Atualizar todas as classes que usam indigo para usar o azul da Climba */
-         .dark .text-indigo-400, .dark .text-indigo-600 {
-            color: var(#FFFFFF) !important;
-        }
-
-        .bg-indigo-600, .hover\:bg-indigo-700:hover {
-            background-color: var(--climba-blue) !important;
-        }
-
-        .dark .bg-indigo-600{
-            background-color: #FFFFFF !important;
-        }
-
-        /* Adicionar classes para focus ring */
-        .focus\:ring-indigo-500:focus {
-            --tw-ring-color: var(--climba-blue) !important;
-        }
-
-        /* Garantir que o progressBar use a cor correta */
-        #progressBar {
-            background-color: var(--climba-blue) !important;
-        }
-
-        /* Remover variação dark que estava causando conflito */
-        .dark .text-indigo-400, .dark .text-indigo-600, .dark .bg-indigo-600 {
-            color: #FFFFFF !important;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-    </style>
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
     <!-- Header com relógio e controles -->

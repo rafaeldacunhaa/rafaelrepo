@@ -125,14 +125,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Aplicar o progresso com unidade % e forçar atualização do estilo
         progressBar.style.cssText = `width: ${progress}% !important; transition: width 0.1s linear;`;
         
-        // Log para debug
-        console.log({
-            duration,
-            remaining,
-            timeElapsed: duration - remaining,
-            progress,
-            width: progressBar.style.width
-        });
 
         const timerContainer = document.getElementById('timerRunning');
 
@@ -964,4 +956,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(progressStyles);
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('Service Worker registrado com sucesso:', registration);
+                
+                // Solicitar permissão para notificações
+                if ('Notification' in window) {
+                    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                        Notification.requestPermission().then(function(permission) {
+                            if (permission === 'granted') {
+                                console.log('Permissão para notificações concedida');
+                            }
+                        });
+                    }
+                }
+            })
+            .catch(function(error) {
+                console.log('Falha ao registrar o Service Worker:', error);
+            });
+    }
 }); 

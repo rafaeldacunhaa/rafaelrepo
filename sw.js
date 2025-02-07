@@ -1,11 +1,17 @@
+// Versão do cache para atualizações
+const CACHE_VERSION = 'v1.0.0';
+
+// Instalação do Service Worker
 self.addEventListener('install', function(event) {
     self.skipWaiting();
 });
 
+// Ativação do Service Worker
 self.addEventListener('activate', function(event) {
     event.waitUntil(clients.claim());
 });
 
+// Gerenciamento de cliques nas notificações
 self.addEventListener('notificationclick', function(event) {
     const notification = event.notification;
     const action = event.action;
