@@ -24,13 +24,6 @@ jobs:
       - name: Build
         run: npm run build
         
-      - name: Copy additional files
-        run: |
-          cp cronnaclimba.html dist/
-          cp -r js dist/
-          cp -r css dist/
-          cp *.mp3 dist/
-        
       - name: List build output
         run: ls -R dist/
         

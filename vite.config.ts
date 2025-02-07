@@ -10,8 +10,7 @@ export default defineConfig({
     assetsDir: '',
     rollupOptions: {
       input: {
-        main: './src/main.ts',
-        app: './cronnaclimba.html'
+        main: './src/main.ts'
       },
       output: {
         entryFileNames: 'main.js'
