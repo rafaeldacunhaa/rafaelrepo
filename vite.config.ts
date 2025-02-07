@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/rafaelrepo/', // Deve ser o nome do seu repositório
+  base: '/rafaelrepo/',
   server: {
     open: true
   },
