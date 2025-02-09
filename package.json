@@ -5,10 +5,11 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "serve": "http-server -c-1",
-    "dev": "npm run watch & npm run serve"
+    "dev": "concurrently \"npm run watch\" \"npm run serve\""
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "concurrently": "^8.0.0"
   }
 } 

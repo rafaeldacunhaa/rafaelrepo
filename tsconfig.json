@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "module": "ES2015",
+    "module": "none",
     "outDir": "./js",
     "rootDir": "./src",
     "strict": true,

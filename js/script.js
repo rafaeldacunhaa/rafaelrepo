@@ -15,14 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggleBlocosOverview = document.getElementById('toggleBlocosOverview');
     
     // Sons
-    const alertSound = document.getElementById('alertSound');
-    const tempoEsgotadoSound = document.getElementById('tempoEsgotadoSound');
-    const tempoAcabandoSound = document.getElementById('tempoAcabandoSound');
+    const audioService = new AudioService();
+    const themeService = new ThemeService();
 
     // Variáveis de estado
-    let timer = null;
-    let endTime = null;
-    let duration = null;
     let currentSeconds = 0;
     let totalSeconds = 0;
     let isTimeOut = false;
@@ -35,28 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let isPageVisible = true;
     let worker;
     let isTitleAlertActive = false;
-
-    // Configuração do tema
-    const themeToggle = document.getElementById('themeToggle');
-    const moonIcon = themeToggle.querySelector('i');
-
-    function updateThemeIcon(isDark) {
-        moonIcon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
-        lucide.createIcons();
-    }
-
-    themeToggle.addEventListener('click', () => {
-        document.documentElement.classList.toggle('dark');
-        const isDark = document.documentElement.classList.contains('dark');
-        updateThemeIcon(isDark);
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    });
-
-    // Verificar tema salvo
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-        updateThemeIcon(true);
-    }
 
     // Configuração de tela cheia
     const fullscreenButton = document.getElementById('fullscreenButton');
@@ -253,20 +227,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (duration > 0) {
-                startTimer(duration);
+                timer.start(duration);
             }
         }
     });
 
-    resetButton.addEventListener('click', resetTimer);
-
-    // Tema escuro
-    themeToggle.addEventListener('click', () => {
-        const isDark = document.documentElement.classList.toggle('dark');
-        const icon = themeToggle.querySelector('i');
-        icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
-        lucide.createIcons();
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    resetButton.addEventListener('click', () => {
+        timer.stop();
     });
 
     // Relógio
@@ -630,7 +597,9 @@ document.addEventListener('DOMContentLoaded', function() {
             timerContainer.classList.remove('timer-ending', 'timer-ended');
             timeDisplay.classList.remove('blink');
             
-            startTimer(bloco.duration, true);
+            timer.start(bloco.duration, () => {
+                showNextBloco();
+            });
             updateNavigationButtons();
             updateBlocosOverview();
         }
@@ -743,7 +712,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!timerRunning.classList.contains('hidden')) {
             // ESC - Parar timer
             if (e.key === 'Escape') {
-                resetTimer();
+                timer.stop();
             }
             // ENTER - Próximo bloco (se existir)
             else if (e.key === 'Enter') {
@@ -781,35 +750,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Melhorar sistema de sons
     function playAlertSound(soundId, options = {}) {
-        const {
-            volume = 1,
-            repeat = 1,
-            interval = 1000
-        } = options;
-
-        const audio = document.getElementById(soundId);
-        let playCount = 0;
-
-        function playWithRetry() {
-            audio.volume = volume;
-            const playPromise = audio.play();
-
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    playCount++;
-                    if (playCount < repeat) {
-                        setTimeout(playWithRetry, interval);
-                    }
-                }).catch(error => {
-                    console.log("Erro ao tocar som:", error);
-                    // Tentar novamente em caso de erro
-                    setTimeout(playWithRetry, 1000);
-                });
-            }
-        }
-
-        audio.currentTime = 0; // Resetar o áudio
-        playWithRetry();
+        audioService.playSound(soundId, options);
     }
 
     // Adicionar função showNextBloco
@@ -977,4 +918,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Falha ao registrar o Service Worker:', error);
             });
     }
+
+    const timer = new Timer();
 }); 
