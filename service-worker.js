@@ -1,18 +1,18 @@
 const CACHE_NAME = 'cronnaclimba-v1';
 const urlsToCache = [
-  '/',
-  '/js/script.js',
-  '/js/components/Timer.js',
-  '/js/components/UIManager.js',
-  '/js/components/BlocoManager.js',
-  '/js/components/NotificationManager.js',
-  '/js/services/AudioService.js',
-  '/js/services/ThemeService.js',
-  '/js/services/WorkerService.js',
-  '/js/data/templates.js',
-  '/css/styles.css',
-  '/tempo-acabando.mp3',
-  '/tempo-esgotado.mp3'
+  './',
+  './js/script.js',
+  './js/components/Timer.js',
+  './js/components/UIManager.js',
+  './js/components/BlocoManager.js',
+  './js/components/NotificationManager.js',
+  './js/services/AudioService.js',
+  './js/services/ThemeService.js',
+  './js/services/WorkerService.js',
+  './js/data/templates.js',
+  './css/styles.css',
+  './tempo-acabando.mp3',
+  './tempo-esgotado.mp3'
 ];
 
 self.addEventListener('install', (event) => {
@@ -20,7 +20,18 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Cache aberto');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache).catch(error => {
+          console.error('Erro ao adicionar arquivos ao cache:', error);
+          // Tentar adicionar os arquivos individualmente
+          return Promise.all(
+            urlsToCache.map(url =>
+              cache.add(url).catch(err => {
+                console.error(`Erro ao adicionar ${url} ao cache:`, err);
+                return Promise.resolve(); // Continua mesmo se um arquivo falhar
+              })
+            )
+          );
+        });
       })
   );
 });
@@ -32,7 +43,11 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(event.request);
+        return fetch(event.request).catch(error => {
+          console.error('Erro ao buscar recurso:', error);
+          // Retorna uma resposta vazia ou fallback se o fetch falhar
+          return new Response('Recurso não disponível');
+        });
       })
   );
 });
