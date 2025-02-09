@@ -171,7 +171,7 @@
                 <!-- Barra de progresso -->
                 <div class="w-full max-w-4xl mb-12">
                     <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div id="progressBar" class="h-full bg-[#151634] transition-all duration-1000"></div>
+                        <div id="progressBar" class="h-full bg-[#151634] transition-all duration-300"></div>
                     </div>
                 </div>
 
@@ -215,11 +215,26 @@
     <audio id="tempoEsgotadoSound" src="tempo-esgotado.mp3"></audio>
     <audio id="tempoAcabandoSound" src="tempo-acabando.mp3"></audio>
 
-    <script src="js/templates.js"></script>
-    <script src="js/components/Timer.js"></script>
-    <script src="js/services/AudioService.js"></script>
-    <script src="js/services/ThemeService.js"></script>
-    <script src="sw.js"></script>
-    <script src="js/script.js" defer></script>
+    <!-- Template para blocos -->
+    <template id="blocoTemplate" type="text/template">
+        <li id="bloco-${id}" class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow ${activeClass}">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800 dark:text-white">${title}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${duration} minutos</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="edit-bloco p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+                        <i data-lucide="edit" class="w-5 h-5"></i>
+                    </button>
+                    <button class="delete-bloco p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-red-500">
+                        <i data-lucide="trash" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </li>
+    </template>
+
+    <script type="module" src="js/script.js"></script>
 </body>
 </html>

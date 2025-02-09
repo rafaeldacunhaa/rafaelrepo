@@ -1,4 +1,6 @@
-class AudioService {
+import { TimerOptions } from '../types/Timer.types';
+
+export class AudioService {
     private sounds: Map<string, HTMLAudioElement>;
 
     constructor() {
@@ -7,41 +9,50 @@ class AudioService {
         console.log('AudioService inicializado!');
     }
 
-    public playSound(id: string, options: { volume?: number; repeat?: number; interval?: number } = {}): void {
-        const sound = this.sounds.get(id);
+    playSound(soundId: string, options: TimerOptions = {}): void {
+        const sound = this.sounds.get(soundId);
         if (!sound) return;
 
-        const { volume = 1, repeat = 1, interval = 1000 } = options;
-        let playCount = 0;
+        const { volume = 1, repeat = 1, interval = 0 } = options;
+        
+        // Configurar volume
+        sound.volume = volume;
 
-        const playWithRetry = () => {
-            sound.volume = volume;
+        // Função para tocar o som
+        const play = () => {
             sound.currentTime = 0;
-            
-            const playPromise = sound.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    playCount++;
-                    if (playCount < repeat) {
-                        setTimeout(playWithRetry, interval);
-                    }
-                }).catch(error => {
-                    console.log("Erro ao tocar som:", error);
-                    setTimeout(playWithRetry, 1000);
-                });
-            }
+            sound.play().catch(error => console.log('Erro ao tocar som:', error));
         };
 
-        playWithRetry();
+        // Tocar som com repetição se necessário
+        if (repeat > 1 && interval > 0) {
+            let count = 0;
+            const intervalId = setInterval(() => {
+                play();
+                count++;
+                if (count >= repeat) {
+                    clearInterval(intervalId);
+                }
+            }, interval);
+        } else {
+            play();
+        }
     }
 
     private initializeSounds(): void {
-        ['alertSound', 'tempoEsgotadoSound', 'tempoAcabandoSound'].forEach(id => {
-            const element = document.getElementById(id) as HTMLAudioElement;
-            if (element) {
-                this.sounds.set(id, element);
-            }
+        // Mapear os sons existentes do HTML
+        const soundElements = document.querySelectorAll('audio[id]');
+        soundElements.forEach(sound => {
+            this.sounds.set(sound.id, sound as HTMLAudioElement);
         });
+    }
+
+    stopSound(soundId: string): void {
+        const sound = this.sounds.get(soundId);
+        if (sound) {
+            sound.pause();
+            sound.currentTime = 0;
+        }
     }
 }
 

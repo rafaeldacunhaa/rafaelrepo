@@ -1,29 +1,29 @@
-"use strict";
-class ThemeService {
+export class ThemeService {
     constructor() {
-        this.themeToggle = document.getElementById('themeToggle');
-        this.moonIcon = this.themeToggle.querySelector('i');
-        this.initializeTheme();
-        console.log('ThemeService inicializado!');
+        this.currentTheme = localStorage.getItem('theme') || 'light';
+        this.applyTheme(this.currentTheme);
+        this.setupThemeToggle();
     }
-    initializeTheme() {
-        // Verificar tema salvo
-        if (localStorage.theme === 'dark' ||
-            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            this.updateThemeIcon(true);
+    setupThemeToggle() {
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => this.toggleTheme());
         }
-        // Adicionar listener para toggle
-        this.themeToggle.addEventListener('click', () => {
-            const isDark = document.documentElement.classList.toggle('dark');
-            this.updateThemeIcon(isDark);
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
     }
-    updateThemeIcon(isDark) {
-        this.moonIcon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
-        window.lucide.createIcons();
+    toggleTheme() {
+        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        this.applyTheme(this.currentTheme);
+        localStorage.setItem('theme', this.currentTheme);
+    }
+    applyTheme(theme) {
+        document.documentElement.classList.remove('light', 'dark');
+        document.documentElement.classList.add(theme);
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.textContent = theme === 'light' ? '🌙' : '☀️';
+        }
     }
 }
 // Tornar o ThemeService disponível globalmente
 window.ThemeService = ThemeService;
+//# sourceMappingURL=ThemeService.js.map

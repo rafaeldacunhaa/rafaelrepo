@@ -1,15 +1,19 @@
 {
   "name": "cronnaclimba",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "serve": "http-server -c-1",
+    "serve": "http-server -c-1 --port 3000",
     "dev": "concurrently \"npm run watch\" \"npm run serve\""
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "typescript": "^5.2.2",
     "http-server": "^14.1.1",
-    "concurrently": "^8.0.0"
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "lucide": "^0.294.0"
   }
 } 

@@ -1,4 +1,4 @@
-const reunioesPredefinidas = {
+export const reunioesPredefinidas = {
     daily: [
         { name: 'Daily - Time 1', duration: 3 },
         { name: 'Daily - Time 2', duration: 3 },
@@ -47,6 +47,4 @@ const reunioesPredefinidas = {
         { name: 'Fechamento', duration: 10 }
     ]
 };
-
-// Exportar os templates para uso em outros arquivos
-window.reunioesPredefinidas = reunioesPredefinidas; 
+//# sourceMappingURL=templates.js.map

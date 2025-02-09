@@ -1,40 +1,60 @@
-class Timer {
-    private timeDisplay: HTMLElement;
-    private progressBar: HTMLElement;
-    private timerContainer: HTMLElement;
+import { TimerEvents, TimerStatus, TimerCallback, AudioServiceInterface, NotificationManagerInterface } from '../types/Timer.types';
+
+export class Timer {
     private endTime: number | null = null;
     private duration: number = 0;
     private interval: number | null = null;
-    private audioService: any; // Será instanciado no construtor
     private playedWarning: boolean = false;
     private playedEnd: boolean = false;
-    private onEnd?: () => void;  // Callback para quando o timer terminar
-    private originalTitle: string;
     private titleInterval: number | null = null;
     private isPageVisible: boolean = true;
     private isPaused: boolean = false;
+    private timeDisplay: HTMLElement;
+    private progressBar: HTMLElement;
+    private timerContainer: HTMLElement;
+    private audioService: AudioServiceInterface;
+    private notificationManager: NotificationManagerInterface;
+    private originalTitle: string;
+    private callbacks: Map<keyof TimerEvents, TimerCallback<any>[]>;
+    private status: TimerStatus = 'stopped';
+    private onEnd?: () => void;
 
-    constructor() {
-        this.timeDisplay = document.getElementById('timeDisplay')!;
-        this.progressBar = document.getElementById('progressBar')!;
-        this.timerContainer = document.getElementById('timerRunning')!;
-        this.audioService = new (window as any).AudioService();
+    constructor(audioService: AudioServiceInterface, notificationManager: NotificationManagerInterface) {
+        this.audioService = audioService;
+        this.notificationManager = notificationManager;
+        this.timeDisplay = document.getElementById('timeDisplay') as HTMLElement;
+        this.progressBar = document.getElementById('progressBar') as HTMLElement;
+        this.timerContainer = document.getElementById('timerRunning') as HTMLElement;
         this.originalTitle = document.title;
-        console.log('Timer inicializado!');
+        this.callbacks = new Map();
 
-        // Adicionar listener de visibilidade
         document.addEventListener('visibilitychange', () => {
             this.isPageVisible = !document.hidden;
         });
+
+        console.log('Timer inicializado!');
+    }
+
+    on<K extends keyof TimerEvents>(event: K, callback: TimerCallback<TimerEvents[K]>): void {
+        if (!this.callbacks.has(event)) {
+            this.callbacks.set(event, []);
+        }
+        this.callbacks.get(event)?.push(callback);
+    }
+
+    private emit<K extends keyof TimerEvents>(event: K, data: TimerEvents[K]): void {
+        const callbacks = this.callbacks.get(event) || [];
+        callbacks.forEach(callback => callback(data));
     }
 
     start(milliseconds: number, onEnd?: () => void): void {
-        // Limpar título e intervalos anteriores
         if (this.titleInterval) {
             clearInterval(this.titleInterval);
             document.title = this.originalTitle;
         }
-
+        
+        this.timerContainer.classList.remove('hidden');
+        
         this.duration = milliseconds;
         this.endTime = Date.now() + milliseconds;
         this.playedWarning = false;
@@ -44,13 +64,16 @@ class Timer {
         if (this.interval) {
             clearInterval(this.interval);
         }
-
-        // Limpar estados visuais
+        
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
         this.timeDisplay.classList.remove('blink', 'text-yellow-500', 'text-red-500');
-
+        
+        this.updateDisplay(milliseconds);
+        this.updateProgress(milliseconds);
+        
         this.interval = window.setInterval(() => this.tick(), 100);
-        this.timerContainer.classList.remove('hidden');
+        this.status = 'running';
+        this.emit('start', { duration: milliseconds });
     }
 
     private tick(): void {
@@ -60,27 +83,28 @@ class Timer {
         this.updateDisplay(remaining);
         this.updateProgress(remaining);
 
-        // Verificar alertas
         if (remaining <= this.duration * 0.1 && !this.playedWarning && remaining > 0) {
             this.handleTimeWarning();
         }
-
+        
         if (remaining <= 0 && !this.playedEnd) {
             this.handleTimeEnd();
             if (this.onEnd) {
                 this.onEnd();
             }
         }
+        
+        this.emit('tick', { remaining });
     }
 
     private handleTimeWarning(): void {
         this.playedWarning = true;
         this.timerContainer.classList.add('timer-ending');
         this.timeDisplay.classList.add('text-yellow-500');
-        this.audioService.playSound('tempoAcabandoSound', { 
-            volume: 0.6, 
-            repeat: 2, 
-            interval: 2000 
+        this.audioService.playSound('tempoAcabandoSound', {
+            volume: 1,
+            repeat: 2,
+            interval: 500
         });
     }
 
@@ -91,65 +115,16 @@ class Timer {
         this.timeDisplay.classList.add('text-red-500', 'blink');
         
         if (this.isPageVisible) {
-            const audio = document.getElementById('tempoEsgotadoSound') as HTMLAudioElement;
-            if (audio && audio.paused) {
-                this.audioService.playSound('tempoEsgotadoSound', { 
-                    volume: 0.8, 
-                    repeat: 3, 
-                    interval: 1500 
-                });
-            }
+            this.audioService.playSound('tempoEsgotadoSound', {
+                volume: 1,
+                repeat: 2,
+                interval: 1000
+            });
         }
-
-        // Atualizar título
-        this.startTitleAlert('⏰ TEMPO ESGOTADO!');
-
-        // Enviar notificação
-        this.sendNotification('Tempo finalizado!');
-    }
-
-    private startTitleAlert(message: string): void {
-        if (this.titleInterval) {
-            clearInterval(this.titleInterval);
-        }
-
-        let isOriginal = true;
-        document.title = `🔔 ${message}`;
         
-        this.titleInterval = window.setInterval(() => {
-            document.title = isOriginal ? `🔔 ${message}` : this.originalTitle;
-            isOriginal = !isOriginal;
-        }, 1000);
-    }
-
-    private sendNotification(message: string): void {
-        if (!("Notification" in window)) return;
-
-        if (Notification.permission === "granted") {
-            try {
-                if (!('serviceWorker' in navigator)) {
-                    throw new Error('Service Worker não suportado');
-                }
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification("⏰ CronnaClimba 2.0", {
-                        body: message,
-                        icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
-                        badge: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
-                        vibrate: [200, 100, 200, 100, 200],
-                        tag: 'timer-notification',
-                        renotify: true,
-                        requireInteraction: true,
-                        silent: false
-                    });
-                });
-            } catch (e) {
-                // Fallback para notificação simples
-                new Notification("⏰ CronnaClimba 2.0", {
-                    body: message,
-                    icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png"
-                });
-            }
-        }
+        this.notificationManager.startTitleAlert('⏰ TEMPO ESGOTADO!');
+        this.notificationManager.sendNotification('Tempo finalizado!');
+        this.emit('timeUp', { remaining: 0 });
     }
 
     private updateDisplay(remaining: number): void {
@@ -161,8 +136,37 @@ class Timer {
     }
 
     private updateProgress(remaining: number): void {
-        const progress = ((this.duration - remaining) / this.duration) * 100;
-        this.progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+        if (!this.duration) return;
+        
+        // Garantir que os números são tratados como números
+        const remainingNum = Number(remaining);
+        const durationNum = Number(this.duration);
+        
+        let progress;
+        const isTimeOver = remainingNum <= 0;
+        
+        if (isTimeOver) {
+            progress = 100;
+        } else {
+            // Calcular o tempo decorrido desde o início
+            const timeElapsed = durationNum - remainingNum;
+            // Calcular a porcentagem com precisão de 2 casas decimais
+            progress = Number((timeElapsed / durationNum * 100).toFixed(2));
+        }
+        
+        // Garantir que o progresso esteja entre 0 e 100
+        progress = Math.min(100, Math.max(0, progress));
+        
+        // Aplicar o progresso com unidade % e forçar atualização do estilo
+        this.progressBar.style.cssText = `width: ${progress}% !important; transition: width 0.3s linear;`;
+        
+        // Debug
+        console.log('Debug Progresso:', {
+            duration: durationNum,
+            remaining: remainingNum,
+            isTimeOver: isTimeOver,
+            progress: progress
+        });
     }
 
     stop(): void {
@@ -170,13 +174,18 @@ class Timer {
             clearInterval(this.interval);
             this.interval = null;
         }
+        
         this.timerContainer.classList.add('hidden');
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
         this.timeDisplay.classList.remove('blink', 'text-yellow-500', 'text-red-500');
+        
         if (this.titleInterval) {
             clearInterval(this.titleInterval);
             document.title = this.originalTitle;
         }
+        
+        this.status = 'stopped';
+        this.emit('stop', undefined);
     }
 
     reset(): void {
@@ -188,22 +197,38 @@ class Timer {
         this.isPaused = false;
         this.updateDisplay(0);
         this.updateProgress(0);
+        this.notificationManager.stopTitleAlert();
     }
 
     pause(): void {
-        if (this.interval) {
-            clearInterval(this.interval);
-            this.interval = null;
+        if (this.status === 'running') {
+            if (this.interval) {
+                clearInterval(this.interval);
+            }
+            this.status = 'paused';
+            this.isPaused = true;
+            this.emit('pause', undefined);
         }
-        this.isPaused = true;
     }
 
     resume(): void {
-        if (!this.isPaused || !this.endTime) return;
-        
-        const remaining = this.endTime - Date.now();
-        this.start(remaining);
-        this.isPaused = false;
+        if (this.status === 'paused' && this.endTime) {
+            this.isPaused = false;
+            const remaining = this.endTime - Date.now();
+            this.endTime = Date.now() + remaining;
+            this.interval = window.setInterval(() => this.tick(), 100);
+            this.status = 'running';
+            this.emit('start', { duration: remaining });
+        }
+    }
+
+    getStatus(): TimerStatus {
+        return this.status;
+    }
+
+    getRemaining(): number {
+        if (!this.endTime) return 0;
+        return Math.max(0, this.endTime - Date.now());
     }
 }
 

@@ -1,42 +1,51 @@
-"use strict";
-class AudioService {
+export class AudioService {
     constructor() {
         this.sounds = new Map();
         this.initializeSounds();
         console.log('AudioService inicializado!');
     }
-    playSound(id, options = {}) {
-        const sound = this.sounds.get(id);
+    playSound(soundId, options = {}) {
+        const sound = this.sounds.get(soundId);
         if (!sound)
             return;
-        const { volume = 1, repeat = 1, interval = 1000 } = options;
-        let playCount = 0;
-        const playWithRetry = () => {
-            sound.volume = volume;
+        const { volume = 1, repeat = 1, interval = 0 } = options;
+        // Configurar volume
+        sound.volume = volume;
+        // Função para tocar o som
+        const play = () => {
             sound.currentTime = 0;
-            const playPromise = sound.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    playCount++;
-                    if (playCount < repeat) {
-                        setTimeout(playWithRetry, interval);
-                    }
-                }).catch(error => {
-                    console.log("Erro ao tocar som:", error);
-                    setTimeout(playWithRetry, 1000);
-                });
-            }
+            sound.play().catch(error => console.log('Erro ao tocar som:', error));
         };
-        playWithRetry();
+        // Tocar som com repetição se necessário
+        if (repeat > 1 && interval > 0) {
+            let count = 0;
+            const intervalId = setInterval(() => {
+                play();
+                count++;
+                if (count >= repeat) {
+                    clearInterval(intervalId);
+                }
+            }, interval);
+        }
+        else {
+            play();
+        }
     }
     initializeSounds() {
-        ['alertSound', 'tempoEsgotadoSound', 'tempoAcabandoSound'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                this.sounds.set(id, element);
-            }
+        // Mapear os sons existentes do HTML
+        const soundElements = document.querySelectorAll('audio[id]');
+        soundElements.forEach(sound => {
+            this.sounds.set(sound.id, sound);
         });
+    }
+    stopSound(soundId) {
+        const sound = this.sounds.get(soundId);
+        if (sound) {
+            sound.pause();
+            sound.currentTime = 0;
+        }
     }
 }
 // Tornar o AudioService disponível globalmente
 window.AudioService = AudioService;
+//# sourceMappingURL=AudioService.js.map
