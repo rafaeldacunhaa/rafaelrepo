@@ -31,7 +31,7 @@ export class BlocoManager {
         const bloco: Bloco = {
             id: crypto.randomUUID(),
             title,
-            duration,
+            duration: Number(duration.toFixed(2)),
             isActive: false
         };
         this.blocos.push(bloco);

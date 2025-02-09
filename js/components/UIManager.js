@@ -70,12 +70,16 @@ export class UIManager {
         }
         const { hours, minutes, seconds } = this.parseTimeInputs(inputs);
         console.log('Valores dos inputs:', { hours, minutes, seconds });
-        const totalMinutes = Math.ceil((hours * 60) + minutes + (seconds / 60));
-        console.log('Total de minutos:', totalMinutes);
-        if (totalMinutes <= 0) {
+        // Converter tudo para segundos primeiro
+        const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+        console.log('Total de segundos:', totalSeconds);
+        if (totalSeconds <= 0) {
             alert('Por favor, configure um tempo válido primeiro.');
             return;
         }
+        // Converter para minutos com precisão de 2 casas decimais
+        const totalMinutes = totalSeconds / 60;
+        console.log('Total de minutos:', totalMinutes);
         const title = this.createBlocoTitle(hours, minutes, seconds);
         console.log('Título do bloco:', title);
         this.blocoManager.addBloco(title, totalMinutes);
