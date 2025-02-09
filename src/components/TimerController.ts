@@ -17,7 +17,17 @@ export class TimerController {
     public start(): void {
         const blocos = this.blocoManager.getBlocos();
         if (blocos.length > 0) {
-            // Sempre começa do primeiro bloco quando inicia
+            this.startWithCurrentBlock();
+            return;
+        }
+
+        this.startWithManualTime();
+    }
+
+    public restartFromBeginning(): void {
+        const blocos = this.blocoManager.getBlocos();
+        if (blocos.length > 0) {
+            // Sempre começa do primeiro bloco quando reinicia
             this.blocoManager.setCurrentBlocoIndex(0);
             this.startWithCurrentBlock();
             return;
@@ -47,7 +57,7 @@ export class TimerController {
         }
     }
 
-    private startWithCurrentBlock(): void {
+    public startWithCurrentBlock(): void {
         const blocos = this.blocoManager.getBlocos();
         if (blocos.length === 0) return;
 
@@ -55,12 +65,8 @@ export class TimerController {
         if (!currentBloco) return;
 
         const milliseconds = currentBloco.duration * 60 * 1000;
-        this.timer.start(milliseconds, () => {
-            const nextBloco = this.blocoManager.setNextBloco();
-            if (nextBloco) {
-                this.startWithCurrentBlock();
-            }
-        });
+        console.log('Iniciando bloco:', currentBloco.title);
+        this.timer.start(milliseconds);
     }
 
     private startWithManualTime(): void {

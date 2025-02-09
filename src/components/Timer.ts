@@ -114,19 +114,21 @@ export class Timer {
         this.timerContainer.classList.add('timer-ended');
         this.timeDisplay.classList.add('text-red-500', 'blink');
         
-        // Tocar o som sempre, independente da visibilidade
         this.audioService.playSound('tempoEsgotadoSound', {
             volume: 1,
             repeat: 2,
             interval: 1000
         });
         
-        // Alterar título sempre
         this.notificationManager.startTitleAlert('⏰ TEMPO ESGOTADO!');
         
-        // Enviar notificação do browser apenas se a página não estiver visível
         if (!this.isPageVisible) {
             this.notificationManager.sendNotification('Tempo finalizado!');
+        }
+        
+        const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
+        if (nextBlocoButtonGreen) {
+            nextBlocoButtonGreen.classList.remove('hidden');
         }
         
         this.emit('timeUp', { remaining: 0 });
@@ -143,7 +145,6 @@ export class Timer {
     private updateProgress(remaining: number): void {
         if (!this.duration) return;
         
-        // Garantir que os números são tratados como números
         const remainingNum = Number(remaining);
         const durationNum = Number(this.duration);
         
@@ -153,25 +154,13 @@ export class Timer {
         if (isTimeOver) {
             progress = 100;
         } else {
-            // Calcular o tempo decorrido desde o início
             const timeElapsed = durationNum - remainingNum;
-            // Calcular a porcentagem com precisão de 2 casas decimais
             progress = Number((timeElapsed / durationNum * 100).toFixed(2));
         }
         
-        // Garantir que o progresso esteja entre 0 e 100
         progress = Math.min(100, Math.max(0, progress));
         
-        // Aplicar o progresso com unidade % e forçar atualização do estilo
         this.progressBar.style.cssText = `width: ${progress}% !important; transition: width 0.3s linear;`;
-        
-        // Debug
-        console.log('Debug Progresso:', {
-            duration: durationNum,
-            remaining: remainingNum,
-            isTimeOver: isTimeOver,
-            progress: progress
-        });
     }
 
     stop(): void {
@@ -184,7 +173,11 @@ export class Timer {
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
         this.timeDisplay.classList.remove('blink', 'text-yellow-500', 'text-red-500');
         
-        // Parar a animação do título
+        const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
+        if (nextBlocoButtonGreen) {
+            nextBlocoButtonGreen.classList.add('hidden');
+        }
+        
         this.notificationManager.stopTitleAlert();
         
         this.status = 'stopped';
@@ -235,5 +228,4 @@ export class Timer {
     }
 }
 
-// Tornar o Timer disponível globalmente
 (window as any).Timer = Timer; 

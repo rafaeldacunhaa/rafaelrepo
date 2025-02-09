@@ -24,7 +24,7 @@ export class UIManager {
         // Timer controls
         document.getElementById('startButton')?.addEventListener('click', () => {
             console.log('Botão start clicado');
-            this.timerController.start();
+            this.timerController.restartFromBeginning();
         });
         document.getElementById('stopButton')?.addEventListener('click', () => {
             console.log('Botão stop clicado');
@@ -37,6 +37,16 @@ export class UIManager {
         document.getElementById('pauseButton')?.addEventListener('click', () => {
             console.log('Botão pause clicado');
             this.timerController.pause();
+        });
+        // Botão verde de próximo bloco
+        document.getElementById('nextBlocoButtonGreen')?.addEventListener('click', () => {
+            console.log('Botão próximo (verde) clicado');
+            this.handleNextBloco();
+            // Esconder o botão após clicar
+            const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
+            if (nextBlocoButtonGreen) {
+                nextBlocoButtonGreen.classList.add('hidden');
+            }
         });
         // Bloco controls
         document.getElementById('addBlocoButton')?.addEventListener('click', () => {
@@ -163,24 +173,38 @@ export class UIManager {
         this.updateActiveBloco(currentIndex, prevIndex);
     }
     handleNextBloco() {
+        console.log('Iniciando navegação para próximo bloco...');
         const blocos = this.blocoManager.getBlocos();
-        if (blocos.length === 0)
+        if (blocos.length === 0) {
+            console.log('Não há blocos para navegar');
             return;
+        }
         const currentIndex = blocos.findIndex(b => b.isActive);
-        if (currentIndex === -1)
+        console.log('Índice atual:', currentIndex);
+        if (currentIndex === -1) {
+            console.log('Nenhum bloco ativo encontrado');
             return;
+        }
         const nextIndex = (currentIndex + 1) % blocos.length;
+        console.log('Próximo índice:', nextIndex);
         this.updateActiveBloco(currentIndex, nextIndex);
     }
     updateActiveBloco(currentIndex, newIndex) {
+        console.log('Atualizando bloco ativo de', currentIndex, 'para', newIndex);
         const blocos = this.blocoManager.getBlocos();
-        blocos[currentIndex].isActive = false;
-        blocos[newIndex].isActive = true;
+        // Parar o timer atual
+        this.timerController.stop();
+        // Atualizar o estado no BlocoManager
         this.blocoManager.setCurrentBlocoIndex(newIndex);
-        const newBloco = blocos[newIndex];
-        const milliseconds = newBloco.duration * 60 * 1000;
-        this.timerController.start();
+        // Atualizar a interface
         this.blocoRenderer.render();
+        // Iniciar o timer com o novo bloco
+        this.timerController.start();
+        // Esconder o botão verde se estiver visível
+        const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
+        if (nextBlocoButtonGreen) {
+            nextBlocoButtonGreen.classList.add('hidden');
+        }
     }
 }
 //# sourceMappingURL=UIManager.js.map
