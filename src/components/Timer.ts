@@ -114,16 +114,21 @@ export class Timer {
         this.timerContainer.classList.add('timer-ended');
         this.timeDisplay.classList.add('text-red-500', 'blink');
         
-        if (this.isPageVisible) {
-            this.audioService.playSound('tempoEsgotadoSound', {
-                volume: 1,
-                repeat: 2,
-                interval: 1000
-            });
+        // Tocar o som sempre, independente da visibilidade
+        this.audioService.playSound('tempoEsgotadoSound', {
+            volume: 1,
+            repeat: 2,
+            interval: 1000
+        });
+        
+        // Alterar título sempre
+        this.notificationManager.startTitleAlert('⏰ TEMPO ESGOTADO!');
+        
+        // Enviar notificação do browser apenas se a página não estiver visível
+        if (!this.isPageVisible) {
+            this.notificationManager.sendNotification('Tempo finalizado!');
         }
         
-        this.notificationManager.startTitleAlert('⏰ TEMPO ESGOTADO!');
-        this.notificationManager.sendNotification('Tempo finalizado!');
         this.emit('timeUp', { remaining: 0 });
     }
 
@@ -179,10 +184,8 @@ export class Timer {
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
         this.timeDisplay.classList.remove('blink', 'text-yellow-500', 'text-red-500');
         
-        if (this.titleInterval) {
-            clearInterval(this.titleInterval);
-            document.title = this.originalTitle;
-        }
+        // Parar a animação do título
+        this.notificationManager.stopTitleAlert();
         
         this.status = 'stopped';
         this.emit('stop', undefined);
