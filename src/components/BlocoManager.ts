@@ -101,12 +101,6 @@ export class BlocoManager {
         StorageService.clear();
     }
 
-    public clearBlocos(): void {
-        this.blocos = [];
-        this.currentBlocoIndex = -1;
-        StorageService.clear();
-    }
-
     public updateBloco(id: string, title: string, duration: number): void {
         const bloco = this.blocos.find(b => b.id === id);
         if (bloco) {
