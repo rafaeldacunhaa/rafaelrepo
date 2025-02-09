@@ -127,6 +127,9 @@ class Timer {
 
         if (Notification.permission === "granted") {
             try {
+                if (!('serviceWorker' in navigator)) {
+                    throw new Error('Service Worker não suportado');
+                }
                 navigator.serviceWorker.ready.then(registration => {
                     registration.showNotification("⏰ CronnaClimba 2.0", {
                         body: message,

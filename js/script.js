@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeService = new ThemeService();
 
     // Variáveis de estado
-    let currentSeconds = 0;
-    let totalSeconds = 0;
-    let isTimeOut = false;
     let currentBlocoIndex = 0;
     let alertRepeatInterval, playedAlertOnce = false;
     const blocos = [];
@@ -29,8 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let originalTitle = document.title;
     let titleInterval;
     let isPageVisible = true;
-    let worker;
-    let isTitleAlertActive = false;
 
     // Configuração de tela cheia
     const fullscreenButton = document.getElementById('fullscreenButton');
@@ -235,15 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
     resetButton.addEventListener('click', () => {
         timer.stop();
     });
-
-    // Relógio
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('currentTime').textContent = 
-            now.toLocaleTimeString('pt-BR');
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
 
     // Inicializar ícones
     lucide.createIcons();
@@ -582,7 +568,6 @@ document.addEventListener('DOMContentLoaded', function() {
             stopTitleAlert();
             
             playedAlertOnce = false;
-            window.playedEndingSound = false;
             isTimeOut = false;
             
             const nextBlocoButton = document.getElementById('startNextBlocoButton');
@@ -788,7 +773,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Resetar estados
             playedAlertOnce = false;
-            window.playedEndingSound = false;
             clearInterval(alertRepeatInterval);
             stopTitleAlert();
             
