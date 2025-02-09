@@ -1,14 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "module": "ESNext",
-    "lib": ["ES2017", "DOM", "DOM.Iterable"],
-    "moduleResolution": "node",
+    "module": "ES2015",
+    "outDir": "./js",
+    "rootDir": "./src",
     "strict": true,
-    "outDir": "./dist",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "isolatedModules": true
+    "lib": ["ES2017", "DOM", "DOM.Iterable"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
