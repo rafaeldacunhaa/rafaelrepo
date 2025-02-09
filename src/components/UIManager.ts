@@ -176,8 +176,20 @@ export class UIManager {
     }
 
     private handleResetBlocos(): void {
+        console.log('Resetando blocos...');
         this.blocoManager.resetBlocos();
         this.blocoRenderer.render();
+        
+        // Limpar os inputs de tempo
+        const hoursInput = document.getElementById('hours') as HTMLInputElement;
+        const minutesInput = document.getElementById('minutes') as HTMLInputElement;
+        const secondsInput = document.getElementById('seconds') as HTMLInputElement;
+        
+        if (hoursInput) hoursInput.value = '0';
+        if (minutesInput) minutesInput.value = '0';
+        if (secondsInput) secondsInput.value = '0';
+        
+        console.log('Blocos resetados com sucesso');
     }
 
     private handlePrevBloco(): void {

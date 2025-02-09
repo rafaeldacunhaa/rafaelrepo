@@ -133,8 +133,20 @@ export class UIManager {
         inputs.seconds.value = '0';
     }
     handleResetBlocos() {
+        console.log('Resetando blocos...');
         this.blocoManager.resetBlocos();
         this.blocoRenderer.render();
+        // Limpar os inputs de tempo
+        const hoursInput = document.getElementById('hours');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+        if (hoursInput)
+            hoursInput.value = '0';
+        if (minutesInput)
+            minutesInput.value = '0';
+        if (secondsInput)
+            secondsInput.value = '0';
+        console.log('Blocos resetados com sucesso');
     }
     handlePrevBloco() {
         const blocos = this.blocoManager.getBlocos();
