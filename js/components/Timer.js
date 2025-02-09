@@ -22,11 +22,10 @@ export class Timer {
         console.log('Timer inicializado!');
     }
     on(event, callback) {
-        var _a;
         if (!this.callbacks.has(event)) {
             this.callbacks.set(event, []);
         }
-        (_a = this.callbacks.get(event)) === null || _a === void 0 ? void 0 : _a.push(callback);
+        this.callbacks.get(event)?.push(callback);
     }
     emit(event, data) {
         const callbacks = this.callbacks.get(event) || [];

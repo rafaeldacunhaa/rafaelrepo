@@ -1,63 +1,23 @@
-import { TimerController } from './TimerController.js';
-import { BlocoRenderer } from './BlocoRenderer.js';
-import { TemplateManager } from './TemplateManager.js';
-import { KeyboardManager } from './KeyboardManager.js';
-export class UIManager {
-    constructor(timer, blocoManager, audioService) {
-        console.log('Iniciando UIManager...');
+export class UIEventHandler {
+    constructor(timerController, blocoManager, blocoRenderer) {
+        this.timerController = timerController;
         this.blocoManager = blocoManager;
-        this.timerController = new TimerController(timer, blocoManager);
-        this.blocoRenderer = new BlocoRenderer(blocoManager);
-        this.templateManager = new TemplateManager(blocoManager, this.blocoRenderer);
-        this.keyboardManager = new KeyboardManager(this.timerController, this);
-        this.initialize();
+        this.blocoRenderer = blocoRenderer;
         this.setupEventListeners();
-        console.log('UIManager inicializado com sucesso');
-    }
-    initialize() {
-        console.log('Inicializando UI...');
-        this.blocoRenderer.render();
-        console.log('UI inicializada');
     }
     setupEventListeners() {
-        console.log('Configurando event listeners...');
         // Timer controls
-        document.getElementById('startButton')?.addEventListener('click', () => {
-            console.log('Botão start clicado');
-            this.timerController.start();
-        });
-        document.getElementById('stopButton')?.addEventListener('click', () => {
-            console.log('Botão stop clicado');
-            this.timerController.stop();
-        });
-        document.getElementById('resetButton')?.addEventListener('click', () => {
-            console.log('Botão reset clicado');
-            this.timerController.reset();
-        });
-        document.getElementById('pauseButton')?.addEventListener('click', () => {
-            console.log('Botão pause clicado');
-            this.timerController.pause();
-        });
+        document.getElementById('startButton')?.addEventListener('click', () => this.timerController.start());
+        document.getElementById('stopButton')?.addEventListener('click', () => this.timerController.stop());
+        document.getElementById('resetButton')?.addEventListener('click', () => this.timerController.reset());
+        document.getElementById('pauseButton')?.addEventListener('click', () => this.timerController.pause());
         // Bloco controls
-        document.getElementById('addBlocoButton')?.addEventListener('click', () => {
-            console.log('Botão adicionar bloco clicado');
-            this.handleAddBloco();
-        });
-        document.getElementById('resetBlocosButton')?.addEventListener('click', () => {
-            console.log('Botão resetar blocos clicado');
-            this.handleResetBlocos();
-        });
-        document.getElementById('prevBlocoButton')?.addEventListener('click', () => {
-            console.log('Botão bloco anterior clicado');
-            this.handlePrevBloco();
-        });
-        document.getElementById('nextBlocoButton')?.addEventListener('click', () => {
-            console.log('Botão próximo bloco clicado');
-            this.handleNextBloco();
-        });
-        // Recarregar event listeners do teclado
-        this.keyboardManager.reloadEventListeners();
-        console.log('Event listeners configurados');
+        const addBlocoButton = document.getElementById('addBlocoButton');
+        console.log('Botão addBloco encontrado:', addBlocoButton);
+        addBlocoButton?.addEventListener('click', () => this.handleAddBloco());
+        document.getElementById('resetBlocosButton')?.addEventListener('click', () => this.handleResetBlocos());
+        document.getElementById('prevBlocoButton')?.addEventListener('click', () => this.handlePrevBloco());
+        document.getElementById('nextBlocoButton')?.addEventListener('click', () => this.handleNextBloco());
     }
     handleAddBloco() {
         console.log('Iniciando handleAddBloco');
@@ -167,4 +127,4 @@ export class UIManager {
         this.blocoRenderer.render();
     }
 }
-//# sourceMappingURL=UIManager.js.map
+//# sourceMappingURL=UIEventHandler.js.map

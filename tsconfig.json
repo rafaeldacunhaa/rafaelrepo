@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2015",
-    "module": "ES2015",
+    "target": "ES2020",
+    "module": "ES2020",
     "moduleResolution": "node",
     "outDir": "./js",
     "rootDir": "./src",
@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2017", "DOM", "DOM.Iterable"],
-    "sourceMap": true
+    "sourceMap": true,
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
