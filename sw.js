@@ -3,6 +3,7 @@ const CACHE_VERSION = 'v1.0.0';
 
 // Instalação do Service Worker
 self.addEventListener('install', function(event) {
+    console.log('Service Worker instalado no escopo:', self.registration.scope);
     self.skipWaiting();
 });
 

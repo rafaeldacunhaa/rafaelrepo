@@ -90,10 +90,9 @@ class Timer {
         this.timerContainer.classList.add('timer-ended');
         this.timeDisplay.classList.add('text-red-500', 'blink');
         
-        // Adicionar verificação de som anterior
         if (this.isPageVisible) {
             const audio = document.getElementById('tempoEsgotadoSound') as HTMLAudioElement;
-            if (audio && !audio.paused) { // Verificar se não está tocando
+            if (audio && audio.paused) {
                 this.audioService.playSound('tempoEsgotadoSound', { 
                     volume: 0.8, 
                     repeat: 3, 

@@ -899,9 +899,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(progressStyles);
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('js/sw.js')
+        navigator.serviceWorker.register('./sw.js')
             .then(function(registration) {
                 console.log('Service Worker registrado com sucesso:', registration);
+                console.log('Escopo:', registration.scope);
                 
                 // Solicitar permissão para notificações
                 if ('Notification' in window) {
@@ -915,7 +916,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(function(error) {
-                console.log('Falha ao registrar o Service Worker:', error);
+                console.error('Erro ao registrar Service Worker:', error);
             });
     }
 
