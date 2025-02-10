@@ -26,6 +26,25 @@ export class UIManager {
             console.log('Botão start clicado');
             this.timerController.restartFromBeginning();
         });
+        // Botões predefinidos de tempo
+        document.querySelectorAll('.predefined-time').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const target = e.target;
+                const timeInSeconds = parseInt(target.dataset.time || '0');
+                console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
+                if (timeInSeconds > 0) {
+                    const hours = Math.floor(timeInSeconds / 3600);
+                    const minutes = Math.floor((timeInSeconds % 3600) / 60);
+                    const seconds = timeInSeconds % 60;
+                    const inputs = this.getTimeInputs();
+                    if (inputs) {
+                        inputs.hours.value = hours.toString();
+                        inputs.minutes.value = minutes.toString();
+                        inputs.seconds.value = seconds.toString();
+                    }
+                }
+            });
+        });
         document.getElementById('stopButton')?.addEventListener('click', () => {
             console.log('Botão stop clicado');
             this.timerController.stop();
