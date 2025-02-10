@@ -3,6 +3,13 @@ export class BlocoRenderer {
         this.blocoManager = blocoManager;
     }
     render() {
+        console.log('Renderizando blocos...');
+        // Atualizar visibilidade dos elementos
+        this.updateVisibility();
+        const blocos = this.blocoManager.getBlocos();
+        if (blocos.length === 0) {
+            return;
+        }
         this.renderMainList();
         this.renderOverview();
         this.updateSummary();
@@ -122,6 +129,44 @@ export class BlocoRenderer {
         if (confirm('Tem certeza que deseja excluir este bloco?')) {
             this.blocoManager.removeBloco(id);
             this.render();
+        }
+    }
+    updateVisibility() {
+        const blocos = this.blocoManager.getBlocos();
+        const hasBlocks = blocos.length > 0;
+        // Elementos principais
+        const blocosPanel = document.getElementById('blocosPanel');
+        const toggleBlocosOverview = document.getElementById('toggleBlocosOverview');
+        if (hasBlocks) {
+            // Mostrar o painel de blocos
+            if (blocosPanel) {
+                blocosPanel.classList.remove('hidden');
+                // Primeiro definir a largura
+                requestAnimationFrame(() => {
+                    blocosPanel.style.width = '350px';
+                    blocosPanel.style.marginLeft = '32px'; // equivalente a ml-8
+                    // Depois fazer o fade in
+                    setTimeout(() => {
+                        blocosPanel.classList.remove('opacity-0');
+                    }, 50);
+                });
+            }
+        }
+        else {
+            // Esconder o painel de blocos
+            if (blocosPanel) {
+                // Primeiro esconder o conteúdo
+                blocosPanel.classList.add('opacity-0');
+                // Depois retrair o painel
+                setTimeout(() => {
+                    blocosPanel.style.width = '0';
+                    blocosPanel.style.marginLeft = '0';
+                }, 300);
+            }
+        }
+        // Atualizar visibilidade do botão de toggle
+        if (toggleBlocosOverview) {
+            toggleBlocosOverview.classList.toggle('hidden', !hasBlocks);
         }
     }
 }

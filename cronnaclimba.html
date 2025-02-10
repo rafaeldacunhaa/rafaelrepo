@@ -60,101 +60,108 @@
             <p class="text-gray-600 dark:text-gray-400 italic text-lg"></p>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- Painel Principal -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6">
-                <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
-                    <i data-lucide="timer" class="w-6 h-6"></i>
-                    Configurar Timer
-                </h2>
-                
-                <!-- Tabs para escolher modo -->
-                <div class="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                    <button class="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-800 shadow text-sm font-medium" id="timerManualTab">
-                        Timer Manual
-                    </button>
-                    <button class="flex-1 py-2 px-4 text-sm font-medium text-gray-600 dark:text-gray-300" id="horarioFinalTab">
-                        Horário Final
-                    </button>
-                </div>
-
-                <!-- Adicionar os dois modos em containers separados -->
-                <div id="timerManualMode">
-                    <div class="grid grid-cols-3 gap-4 mb-6">
-                        <div class="text-center relative">
-                            <input type="number" id="hours" min="0" value="0" 
-                                   class="w-full text-3xl text-center pl-10 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horas</label>
-                        </div>
-                        <div class="text-center">
-                            <input type="number" id="minutes" min="0" value="0"
-                                   class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Minutos</label>
-                        </div>
-                        <div class="text-center">
-                            <input type="number" id="seconds" min="0" value="0"
-                                   class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Segundos</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="horarioFinalMode" class="hidden">
-                    <div class="mb-6">
-                        <input type="time" id="endHour" 
-                               class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                        <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horário Final</label>
-                    </div>
-                </div>
-
-                <!-- Botões predefinidos -->
-                <div class="flex flex-wrap gap-2 mb-6">
-                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="120">2 min</button>
-                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="480">8 min</button>
-                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="900">15 min</button>
-                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="1800">30 min</button>
-                    <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="3600">1 hora</button>
-                    <button id="addBlocoButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-gray-800 dark:text-white font-medium flex items-center gap-1.5 text-sm">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                        Adicionar
-                    </button>
-                </div>
-
-                <button id="startButton" class="w-full py-4 bg-[#151634] hover:bg-[#0d0e22] text-white rounded-lg text-lg font-medium transition-colors flex items-center justify-center gap-2">
-                    <i data-lucide="play"></i>
-                    Iniciar
-                </button>
-            </div>
-
-            <!-- Painel de Blocos -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-5">
-                <!-- Cabeçalho com título e botões -->
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                        <i data-lucide="list-todo" class="w-5 h-5"></i>
-                        Blocos de Tempo
+        <div class="flex justify-center" id="painelContainer">
+            <!-- Painel Único Expansível -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 transition-all duration-500 ease-in-out flex" id="timerPanel">
+                <!-- Container Flex para Timer e Blocos -->
+                <div class="flex-shrink-0" style="width: 512px;">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                        <i data-lucide="timer" class="w-6 h-6"></i>
+                        Configurar Timer
                     </h2>
-                    <button id="resetBlocosButton" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium flex items-center gap-1.5 text-base">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        Limpar Lista
+                    
+                    <!-- Tabs para escolher modo -->
+                    <div class="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                        <button class="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-800 shadow text-sm font-medium" id="timerManualTab">
+                            Timer Manual
+                        </button>
+                        <button class="flex-1 py-2 px-4 text-sm font-medium text-gray-600 dark:text-gray-300" id="horarioFinalTab">
+                            Horário Final
+                        </button>
+                    </div>
+
+                    <!-- Modos do Timer -->
+                    <div id="timerManualMode">
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="text-center relative">
+                                <input type="number" id="hours" min="0" value="0" 
+                                       class="w-full text-3xl text-center pl-10 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                                <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horas</label>
+                            </div>
+                            <div class="text-center">
+                                <input type="number" id="minutes" min="0" value="0"
+                                       class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                                <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Minutos</label>
+                            </div>
+                            <div class="text-center">
+                                <input type="number" id="seconds" min="0" value="0"
+                                       class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                                <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Segundos</label>
+                            </div>
+                        </div>
+
+                        <!-- Template e Botão Adicionar -->
+                        <div class="flex gap-4 mb-6">
+                            <select id="reuniaoTemplate" class="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base p-2.5">
+                                <option value="" disabled selected>Templates</option>
+                            </select>
+                            <button id="addBlocoButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-gray-800 dark:text-white font-medium flex items-center gap-1.5 text-sm whitespace-nowrap">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                Adicionar
+                            </button>
+                        </div>
+
+                        <!-- Botões predefinidos -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="120">2 min</button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="480">8 min</button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="900">15 min</button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="1800">30 min</button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="3600">1 hora</button>
+                        </div>
+                    </div>
+
+                    <div id="horarioFinalMode" class="hidden">
+                        <div class="mb-6">
+                            <input type="time" id="endHour" 
+                                   class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horário Final</label>
+                        </div>
+                    </div>
+
+                    <button id="startButton" class="w-full py-4 bg-[#151634] hover:bg-[#0d0e22] text-white rounded-lg text-lg font-medium transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="play"></i>
+                        Iniciar
                     </button>
                 </div>
 
-                <!-- Sumário dos blocos -->
-                <div id="blocosSummary" class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-base hidden">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600 dark:text-gray-300">Total: <span id="tempoTotal" class="font-medium text-gray-800 dark:text-white">--:--:--</span></span>
-                        <span class="text-gray-600 dark:text-gray-300">Término: <span id="horarioTermino" class="font-medium text-gray-800 dark:text-white">--:--</span></span>
+                <!-- Lado dos Blocos -->
+                <div id="blocosPanel" class="flex-shrink-0 w-0 opacity-0 transition-all duration-500 ease-in-out overflow-hidden">
+                    <div class="w-[350px]">
+                        <!-- Cabeçalho com título e botões -->
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                                <i data-lucide="list-todo" class="w-5 h-5"></i>
+                                Blocos de Tempo
+                            </h2>
+                            <button id="resetBlocosButton" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium flex items-center gap-1.5 text-base">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                Limpar Lista
+                            </button>
+                        </div>
+
+                        <!-- Sumário dos blocos -->
+                        <div id="blocosSummary" class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-base">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 dark:text-gray-300">Total: <span id="tempoTotal" class="font-medium text-gray-800 dark:text-white">--:--:--</span></span>
+                                <span class="text-gray-600 dark:text-gray-300">Término: <span id="horarioTermino" class="font-medium text-gray-800 dark:text-white">--:--</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Lista de blocos -->
+                        <ul id="blocoList" class="space-y-2 max-h-[350px] overflow-y-auto"></ul>
                     </div>
                 </div>
-
-                <!-- Seletor de templates -->
-                <select id="reuniaoTemplate" class="w-full mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base p-2.5">
-                    <option value="" disabled selected>Templates</option>
-                </select>
-
-                <!-- Lista de blocos -->
-                <ul id="blocoList" class="space-y-2 max-h-[350px] overflow-y-auto"></ul>
             </div>
         </div>
 
