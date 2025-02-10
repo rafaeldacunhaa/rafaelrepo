@@ -26,6 +26,21 @@ export class UIManager {
             console.log('Botão start clicado');
             this.timerController.restartFromBeginning();
         });
+        // Toggle da lista de blocos
+        document.getElementById('toggleBlocosOverview')?.addEventListener('click', () => {
+            console.log('Toggle da lista de blocos clicado');
+            const blocosOverview = document.getElementById('blocosOverview');
+            if (blocosOverview) {
+                blocosOverview.classList.toggle('translate-x-full');
+            }
+        });
+        document.getElementById('closeBlocksButton')?.addEventListener('click', () => {
+            console.log('Botão fechar lista de blocos clicado');
+            const blocosOverview = document.getElementById('blocosOverview');
+            if (blocosOverview) {
+                blocosOverview.classList.add('translate-x-full');
+            }
+        });
         // Botões predefinidos de tempo
         document.querySelectorAll('.predefined-time').forEach(button => {
             button.addEventListener('click', (e) => {

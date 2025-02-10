@@ -22,6 +22,8 @@ export class Timer {
     private onEnd?: () => void;
     private pipController: PiPController;
     private titleManager: TitleManager;
+    private lastEndSound: number = 0;
+    private readonly END_SOUND_INTERVAL = 5 * 60 * 1000; // 5 minutos em milissegundos
 
     constructor(audioService: AudioServiceInterface, notificationManager: NotificationManagerInterface) {
         this.audioService = audioService;
@@ -112,8 +114,17 @@ export class Timer {
             this.handleTimeWarning();
         }
         
-        if (remaining <= 0 && !this.playedEnd) {
-            this.handleTimeEnd();
+        // Quando o tempo acaba
+        if (remaining <= 0) {
+            if (!this.playedEnd) {
+                this.handleTimeEnd();
+            } else {
+                // Tocar som novamente a cada 5 minutos após o término
+                const timeSinceLastSound = Date.now() - this.lastEndSound;
+                if (timeSinceLastSound >= this.END_SOUND_INTERVAL) {
+                    this.playEndSound();
+                }
+            }
         }
 
         this.updateDisplay(remaining);
@@ -134,6 +145,15 @@ export class Timer {
         });
     }
 
+    private playEndSound(): void {
+        this.audioService.playSound('tempoEsgotadoSound', {
+            volume: 1,
+            repeat: 2,
+            interval: 1000
+        });
+        this.lastEndSound = Date.now();
+    }
+
     private async handleTimeEnd(): Promise<void> {
         this.playedEnd = true;
         this.timerContainer.classList.remove('timer-ending');
@@ -141,11 +161,7 @@ export class Timer {
         this.timeDisplay.classList.remove('text-[#151634]');
         this.timeDisplay.classList.add('text-red-500', 'blink');
         
-        this.audioService.playSound('tempoEsgotadoSound', {
-            volume: 1,
-            repeat: 2,
-            interval: 1000
-        });
+        this.playEndSound();
         
         if (!this.isPageVisible) {
             this.titleManager.startBlinking('⏰ TEMPO ESGOTADO!');

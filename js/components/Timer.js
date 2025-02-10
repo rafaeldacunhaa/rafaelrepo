@@ -12,6 +12,8 @@ export class Timer {
         this.isPaused = false;
         this.callbacks = new Map();
         this.status = 'stopped';
+        this.lastEndSound = 0;
+        this.END_SOUND_INTERVAL = 5 * 60 * 1000; // 5 minutos em milissegundos
         this.audioService = audioService;
         this.notificationManager = notificationManager;
         this.timeDisplay = document.getElementById('timeDisplay');
@@ -84,8 +86,18 @@ export class Timer {
         if (remaining <= this.duration * 0.1 && !this.playedWarning && remaining > 0) {
             this.handleTimeWarning();
         }
-        if (remaining <= 0 && !this.playedEnd) {
-            this.handleTimeEnd();
+        // Quando o tempo acaba
+        if (remaining <= 0) {
+            if (!this.playedEnd) {
+                this.handleTimeEnd();
+            }
+            else {
+                // Tocar som novamente a cada 5 minutos após o término
+                const timeSinceLastSound = Date.now() - this.lastEndSound;
+                if (timeSinceLastSound >= this.END_SOUND_INTERVAL) {
+                    this.playEndSound();
+                }
+            }
         }
         this.updateDisplay(remaining);
         this.updateProgress(remaining);
@@ -102,17 +114,21 @@ export class Timer {
             interval: 500
         });
     }
+    playEndSound() {
+        this.audioService.playSound('tempoEsgotadoSound', {
+            volume: 1,
+            repeat: 2,
+            interval: 1000
+        });
+        this.lastEndSound = Date.now();
+    }
     async handleTimeEnd() {
         this.playedEnd = true;
         this.timerContainer.classList.remove('timer-ending');
         this.timerContainer.classList.add('timer-ended');
         this.timeDisplay.classList.remove('text-[#151634]');
         this.timeDisplay.classList.add('text-red-500', 'blink');
-        this.audioService.playSound('tempoEsgotadoSound', {
-            volume: 1,
-            repeat: 2,
-            interval: 1000
-        });
+        this.playEndSound();
         if (!this.isPageVisible) {
             this.titleManager.startBlinking('⏰ TEMPO ESGOTADO!');
             this.notificationManager.sendNotification('Tempo finalizado!');
