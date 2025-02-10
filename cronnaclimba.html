@@ -72,10 +72,12 @@
                     
                     <!-- Tabs para escolher modo -->
                     <div class="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                        <button class="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-800 shadow text-sm font-medium" id="timerManualTab">
+                        <button class="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-800 shadow text-sm font-medium flex items-center justify-center gap-2" id="timerManualTab">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
                             Timer Manual
                         </button>
-                        <button class="flex-1 py-2 px-4 text-sm font-medium text-gray-600 dark:text-gray-300" id="horarioFinalTab">
+                        <button class="flex-1 py-2 px-4 text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2" id="horarioFinalTab">
+                            <i data-lucide="alarm-clock" class="w-4 h-4"></i>
                             Horário Final
                         </button>
                     </div>
@@ -102,9 +104,12 @@
 
                         <!-- Template e Botão Adicionar -->
                         <div class="flex gap-4 mb-6">
-                            <select id="reuniaoTemplate" class="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base p-2.5">
-                                <option value="" disabled selected>Templates</option>
-                            </select>
+                            <div class="flex-1 relative">
+                                <i data-lucide="list-checks" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <select id="reuniaoTemplate" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base p-2.5 pl-10">
+                                    <option value="" disabled selected>Templates</option>
+                                </select>
+                            </div>
                             <button id="addBlocoButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-gray-800 dark:text-white font-medium flex items-center gap-1.5 text-sm whitespace-nowrap">
                                 <i data-lucide="plus-circle" class="w-4 h-4"></i>
                                 Adicionar
@@ -113,24 +118,40 @@
 
                         <!-- Botões predefinidos -->
                         <div class="flex flex-wrap gap-2 mb-6">
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="120">2 min</button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="480">8 min</button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="900">15 min</button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="1800">30 min</button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600" data-time="3600">1 hora</button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="120">
+                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                                2 min
+                            </button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="480">
+                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                                8 min
+                            </button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="900">
+                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                                15 min
+                            </button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="1800">
+                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                                30 min
+                            </button>
+                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="3600">
+                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                                1 hora
+                            </button>
                         </div>
                     </div>
 
                     <div id="horarioFinalMode" class="hidden">
-                        <div class="mb-6">
+                        <div class="mb-6 relative">
+                            <i data-lucide="alarm-clock" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                             <input type="time" id="endHour" 
-                                   class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                                   class="w-full text-3xl text-center pl-10 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
                             <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horário Final</label>
                         </div>
                     </div>
 
                     <button id="startButton" class="w-full py-4 bg-[#151634] hover:bg-[#0d0e22] text-white rounded-lg text-lg font-medium transition-colors flex items-center justify-center gap-2">
-                        <i data-lucide="play"></i>
+                        <i data-lucide="play" class="w-6 h-6"></i>
                         Iniciar
                     </button>
                 </div>
