@@ -1,5 +1,6 @@
 import { TimerEvents, TimerStatus, TimerCallback, AudioServiceInterface, NotificationManagerInterface } from '../types/Timer.types';
 import { PiPController } from './PiPController.js';
+import { TitleManager } from './TitleManager.js';
 
 export class Timer {
     private endTime: number | null = null;
@@ -20,6 +21,7 @@ export class Timer {
     private status: TimerStatus = 'stopped';
     private onEnd?: () => void;
     private pipController: PiPController;
+    private titleManager: TitleManager;
 
     constructor(audioService: AudioServiceInterface, notificationManager: NotificationManagerInterface) {
         this.audioService = audioService;
@@ -29,6 +31,7 @@ export class Timer {
         this.timerContainer = document.getElementById('timerRunning') as HTMLElement;
         this.originalTitle = document.title;
         this.pipController = new PiPController();
+        this.titleManager = new TitleManager();
 
         document.addEventListener('visibilitychange', () => {
             this.isPageVisible = !document.hidden;
@@ -36,7 +39,10 @@ export class Timer {
 
         // Atualizar PiP quando o timer atualizar
         this.on('tick', () => this.updatePiP());
-        this.on('stop', () => this.pipController.close());
+        this.on('stop', () => {
+            this.pipController.close();
+            this.titleManager.reset();
+        });
         this.on('pause', () => this.updatePiP());
         this.on('start', () => this.updatePiP());
 
@@ -101,9 +107,13 @@ export class Timer {
 
         const remaining = this.getRemaining();
         
-        if (remaining <= 0) {
+        // Aviso quando falta 10% do tempo
+        if (remaining <= this.duration * 0.1 && !this.playedWarning && remaining > 0) {
+            this.handleTimeWarning();
+        }
+        
+        if (remaining <= 0 && !this.playedEnd) {
             this.handleTimeEnd();
-            return;
         }
 
         this.updateDisplay(remaining);
@@ -116,7 +126,7 @@ export class Timer {
     private handleTimeWarning(): void {
         this.playedWarning = true;
         this.timerContainer.classList.add('timer-ending');
-        this.timeDisplay.classList.add('text-yellow-500');
+        this.timeDisplay.classList.add('text-[#151634]');
         this.audioService.playSound('tempoAcabandoSound', {
             volume: 1,
             repeat: 2,
@@ -125,10 +135,12 @@ export class Timer {
     }
 
     private async handleTimeEnd(): Promise<void> {
-        this.status = 'stopped';
-        this.emit('stop');
+        this.playedEnd = true;
+        this.timerContainer.classList.remove('timer-ending');
+        this.timerContainer.classList.add('timer-ended');
+        this.timeDisplay.classList.remove('text-[#151634]');
+        this.timeDisplay.classList.add('text-red-500', 'blink');
         
-        this.updateDisplay(0);
         this.audioService.playSound('tempoEsgotadoSound', {
             volume: 1,
             repeat: 2,
@@ -136,54 +148,14 @@ export class Timer {
         });
         
         if (!this.isPageVisible) {
-            try {
-                if ('documentPictureInPicture' in window) {
-                    const pipWindow = await (window as any).documentPictureInPicture.requestWindow({
-                        width: 400,
-                        height: 300
-                    });
-
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        body { 
-                            margin: 0; 
-                            display: flex; 
-                            align-items: center; 
-                            justify-content: center;
-                            background: #151634;
-                            color: white;
-                            font-family: system-ui;
-                        }
-                        .pip-container {
-                            text-align: center;
-                            padding: 20px;
-                        }
-                        .message {
-                            font-size: 24px;
-                            font-weight: bold;
-                        }
-                    `;
-
-                    pipWindow.document.head.appendChild(style);
-                    const container = document.createElement('div');
-                    container.className = 'pip-container';
-                    container.innerHTML = `
-                        <div class="message">Tempo Esgotado!</div>
-                    `;
-                    pipWindow.document.body.appendChild(container);
-
-                    document.addEventListener('visibilitychange', () => {
-                        if (!document.hidden && pipWindow) {
-                            pipWindow.close();
-                        }
-                    }, { once: true });
-                }
-            } catch (error) {
-                console.log('Picture-in-Picture não suportado:', error);
-            }
+            this.titleManager.startBlinking('⏰ TEMPO ESGOTADO!');
+            this.notificationManager.sendNotification('Tempo finalizado!');
         }
-
-        this.notificationManager.sendNotification('Tempo finalizado!');
+        
+        const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
+        if (nextBlocoButtonGreen) {
+            nextBlocoButtonGreen.classList.remove('hidden');
+        }
         
         if (this.onEnd) {
             this.onEnd();
@@ -195,7 +167,9 @@ export class Timer {
         const isNegative = remaining < 0;
         const minutes = Math.floor(absRemaining / 60000);
         const seconds = Math.floor((absRemaining % 60000) / 1000);
-        this.timeDisplay.textContent = `${isNegative ? '-' : ''}${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const timeStr = `${isNegative ? '-' : ''}${minutes}:${seconds.toString().padStart(2, '0')}`;
+        this.timeDisplay.textContent = timeStr;
+        this.titleManager.updateTimeRemaining(timeStr);
     }
 
     private updateProgress(remaining: number): void {
@@ -227,14 +201,14 @@ export class Timer {
         
         this.timerContainer.classList.add('hidden');
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
-        this.timeDisplay.classList.remove('blink', 'text-yellow-500', 'text-red-500');
+        this.timeDisplay.classList.remove('blink', 'text-[#151634]', 'text-red-500');
         
         const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
         if (nextBlocoButtonGreen) {
             nextBlocoButtonGreen.classList.add('hidden');
         }
         
-        this.notificationManager.stopTitleAlert();
+        this.titleManager.reset();
         
         this.status = 'stopped';
         this.emit('stop', undefined);
@@ -249,7 +223,7 @@ export class Timer {
         this.isPaused = false;
         this.updateDisplay(0);
         this.updateProgress(0);
-        this.notificationManager.stopTitleAlert();
+        this.titleManager.reset();
     }
 
     pause(): void {
@@ -280,7 +254,7 @@ export class Timer {
 
     getRemaining(): number {
         if (!this.endTime) return 0;
-        return Math.max(0, this.endTime - Date.now());
+        return this.endTime - Date.now();
     }
 
     private updatePiP(): void {
