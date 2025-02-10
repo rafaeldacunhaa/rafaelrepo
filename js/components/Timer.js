@@ -1,3 +1,4 @@
+import { PiPController } from './PiPController.js';
 export class Timer {
     constructor(audioService, notificationManager) {
         this.endTime = null;
@@ -8,6 +9,7 @@ export class Timer {
         this.titleInterval = null;
         this.isPageVisible = true;
         this.isPaused = false;
+        this.callbacks = new Map();
         this.status = 'stopped';
         this.audioService = audioService;
         this.notificationManager = notificationManager;
@@ -15,11 +17,22 @@ export class Timer {
         this.progressBar = document.getElementById('progressBar');
         this.timerContainer = document.getElementById('timerRunning');
         this.originalTitle = document.title;
-        this.callbacks = new Map();
+        this.pipController = new PiPController();
         document.addEventListener('visibilitychange', () => {
             this.isPageVisible = !document.hidden;
         });
+        // Atualizar PiP quando o timer atualizar
+        this.on('tick', () => this.updatePiP());
+        this.on('stop', () => this.pipController.close());
+        this.on('pause', () => this.updatePiP());
+        this.on('start', () => this.updatePiP());
         console.log('Timer inicializado!');
+    }
+    emit(event, ...args) {
+        const eventCallbacks = this.callbacks.get(event);
+        if (eventCallbacks) {
+            eventCallbacks.forEach(callback => callback(...args));
+        }
     }
     on(event, callback) {
         if (!this.callbacks.has(event)) {
@@ -27,9 +40,14 @@ export class Timer {
         }
         this.callbacks.get(event)?.push(callback);
     }
-    emit(event, data) {
-        const callbacks = this.callbacks.get(event) || [];
-        callbacks.forEach(callback => callback(data));
+    off(event, callback) {
+        const eventCallbacks = this.callbacks.get(event);
+        if (eventCallbacks) {
+            const index = eventCallbacks.indexOf(callback);
+            if (index !== -1) {
+                eventCallbacks.splice(index, 1);
+            }
+        }
     }
     start(milliseconds, onEnd) {
         if (this.titleInterval) {
@@ -54,21 +72,17 @@ export class Timer {
         this.emit('start', { duration: milliseconds });
     }
     tick() {
-        if (!this.endTime)
+        if (this.status !== 'running' || !this.endTime)
             return;
-        const remaining = this.endTime - Date.now();
+        const remaining = this.getRemaining();
+        if (remaining <= 0) {
+            this.handleTimeEnd();
+            return;
+        }
         this.updateDisplay(remaining);
         this.updateProgress(remaining);
-        if (remaining <= this.duration * 0.1 && !this.playedWarning && remaining > 0) {
-            this.handleTimeWarning();
-        }
-        if (remaining <= 0 && !this.playedEnd) {
-            this.handleTimeEnd();
-            if (this.onEnd) {
-                this.onEnd();
-            }
-        }
-        this.emit('tick', { remaining });
+        this.emit('tick', remaining);
+        requestAnimationFrame(() => this.tick());
     }
     handleTimeWarning() {
         this.playedWarning = true;
@@ -80,25 +94,64 @@ export class Timer {
             interval: 500
         });
     }
-    handleTimeEnd() {
-        this.playedEnd = true;
-        this.timerContainer.classList.remove('timer-ending');
-        this.timerContainer.classList.add('timer-ended');
-        this.timeDisplay.classList.add('text-red-500', 'blink');
+    async handleTimeEnd() {
+        this.status = 'stopped';
+        this.emit('stop');
+        this.updateDisplay(0);
         this.audioService.playSound('tempoEsgotadoSound', {
             volume: 1,
             repeat: 2,
             interval: 1000
         });
-        this.notificationManager.startTitleAlert('⏰ TEMPO ESGOTADO!');
         if (!this.isPageVisible) {
-            this.notificationManager.sendNotification('Tempo finalizado!');
+            try {
+                if ('documentPictureInPicture' in window) {
+                    const pipWindow = await window.documentPictureInPicture.requestWindow({
+                        width: 400,
+                        height: 300
+                    });
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        body { 
+                            margin: 0; 
+                            display: flex; 
+                            align-items: center; 
+                            justify-content: center;
+                            background: #151634;
+                            color: white;
+                            font-family: system-ui;
+                        }
+                        .pip-container {
+                            text-align: center;
+                            padding: 20px;
+                        }
+                        .message {
+                            font-size: 24px;
+                            font-weight: bold;
+                        }
+                    `;
+                    pipWindow.document.head.appendChild(style);
+                    const container = document.createElement('div');
+                    container.className = 'pip-container';
+                    container.innerHTML = `
+                        <div class="message">Tempo Esgotado!</div>
+                    `;
+                    pipWindow.document.body.appendChild(container);
+                    document.addEventListener('visibilitychange', () => {
+                        if (!document.hidden && pipWindow) {
+                            pipWindow.close();
+                        }
+                    }, { once: true });
+                }
+            }
+            catch (error) {
+                console.log('Picture-in-Picture não suportado:', error);
+            }
         }
-        const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
-        if (nextBlocoButtonGreen) {
-            nextBlocoButtonGreen.classList.remove('hidden');
+        this.notificationManager.sendNotification('Tempo finalizado!');
+        if (this.onEnd) {
+            this.onEnd();
         }
-        this.emit('timeUp', { remaining: 0 });
     }
     updateDisplay(remaining) {
         const absRemaining = Math.abs(remaining);
@@ -178,6 +231,27 @@ export class Timer {
         if (!this.endTime)
             return 0;
         return Math.max(0, this.endTime - Date.now());
+    }
+    updatePiP() {
+        this.pipController.updateInfo({
+            timeDisplay: this.timeDisplay.textContent || '',
+            blocoName: this.getCurrentBlocoName(),
+            status: this.status,
+            duration: this.duration,
+            remaining: this.getRemaining(),
+            progress: this.getProgressPercentage()
+        });
+    }
+    getCurrentBlocoName() {
+        const blocoName = document.getElementById('currentBlocoName');
+        return blocoName?.textContent || '';
+    }
+    getProgressPercentage() {
+        if (!this.duration || !this.endTime)
+            return 0;
+        const remaining = this.endTime - Date.now();
+        const progress = ((this.duration - remaining) / this.duration) * 100;
+        return Math.min(100, Math.max(0, progress));
     }
 }
 window.Timer = Timer;
