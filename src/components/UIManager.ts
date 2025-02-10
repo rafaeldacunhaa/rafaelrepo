@@ -44,8 +44,8 @@ export class UIManager {
         // Botões predefinidos de tempo
         document.querySelectorAll('.predefined-time').forEach(button => {
             button.addEventListener('click', (e) => {
-                const target = e.target as HTMLButtonElement;
-                const timeInSeconds = parseInt(target.dataset.time || '0');
+                const button = e.currentTarget as HTMLButtonElement;
+                const timeInSeconds = parseInt(button.dataset.time || '0');
                 console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
                 
                 if (timeInSeconds > 0) {
