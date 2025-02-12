@@ -52,5 +52,9 @@ export class KeyboardManager {
         console.log('Recarregando event listeners de teclado');
         this.setupKeyboardShortcuts();
     }
+    cleanup() {
+        console.log('Limpando event listeners de teclado');
+        document.removeEventListener('keydown', this.boundHandleKeyboardShortcut);
+    }
 }
 //# sourceMappingURL=KeyboardManager.js.map

@@ -4,6 +4,7 @@ import { TemplateManager } from './TemplateManager.js';
 import { KeyboardManager } from './KeyboardManager.js';
 export class UIManager {
     constructor(timer, blocoManager, audioService) {
+        this.boundEventListeners = new Map();
         console.log('Iniciando UIManager...');
         this.blocoManager = blocoManager;
         this.timerController = new TimerController(timer, blocoManager);
@@ -13,89 +14,121 @@ export class UIManager {
         this.initialize();
         this.setupEventListeners();
         console.log('UIManager inicializado com sucesso');
+        // Adiciona listener para limpar recursos quando a página for fechada
+        window.addEventListener('unload', () => this.cleanup());
     }
     initialize() {
         console.log('Inicializando UI...');
         this.blocoRenderer.render();
         console.log('UI inicializada');
     }
+    cleanup() {
+        console.log('Limpando recursos do UIManager...');
+        // Remove todos os event listeners
+        this.boundEventListeners.forEach((listener, elementId) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.removeEventListener('click', listener);
+            }
+        });
+        this.boundEventListeners.clear();
+        // Limpa outros recursos
+        this.keyboardManager.cleanup();
+        this.timerController.cleanup();
+    }
+    addEventListenerWithCleanup(elementId, event, handler) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            // Remove listener antigo se existir
+            const oldListener = this.boundEventListeners.get(elementId);
+            if (oldListener) {
+                element.removeEventListener(event, oldListener);
+            }
+            // Adiciona novo listener
+            element.addEventListener(event, handler);
+            this.boundEventListeners.set(elementId, handler);
+        }
+    }
     setupEventListeners() {
         console.log('Configurando event listeners...');
         // Timer controls
-        document.getElementById('startButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('startButton', 'click', () => {
             console.log('Botão start clicado');
             this.timerController.restartFromBeginning();
         });
-        // Toggle da lista de blocos
-        document.getElementById('toggleBlocosOverview')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('toggleBlocosOverview', 'click', () => {
             console.log('Toggle da lista de blocos clicado');
             const blocosOverview = document.getElementById('blocosOverview');
             if (blocosOverview) {
                 blocosOverview.classList.toggle('translate-x-full');
             }
         });
-        document.getElementById('closeBlocksButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('closeBlocksButton', 'click', () => {
             console.log('Botão fechar lista de blocos clicado');
             const blocosOverview = document.getElementById('blocosOverview');
             if (blocosOverview) {
                 blocosOverview.classList.add('translate-x-full');
             }
         });
-        // Botões predefinidos de tempo
-        document.querySelectorAll('.predefined-time').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const button = e.currentTarget;
-                const timeInSeconds = parseInt(button.dataset.time || '0');
-                console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
-                if (timeInSeconds > 0) {
-                    const hours = Math.floor(timeInSeconds / 3600);
-                    const minutes = Math.floor((timeInSeconds % 3600) / 60);
-                    const seconds = timeInSeconds % 60;
-                    const inputs = this.getTimeInputs();
-                    if (inputs) {
-                        inputs.hours.value = hours.toString();
-                        inputs.minutes.value = minutes.toString();
-                        inputs.seconds.value = seconds.toString();
+        // Botões predefinidos de tempo - usando delegação de eventos
+        const timeButtonsContainer = document.querySelector('.time-buttons-container');
+        if (timeButtonsContainer) {
+            const timeButtonHandler = (e) => {
+                const target = e.target;
+                if (target.classList.contains('predefined-time')) {
+                    const timeInSeconds = parseInt(target.dataset.time || '0');
+                    console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
+                    if (timeInSeconds > 0) {
+                        const hours = Math.floor(timeInSeconds / 3600);
+                        const minutes = Math.floor((timeInSeconds % 3600) / 60);
+                        const seconds = timeInSeconds % 60;
+                        const inputs = this.getTimeInputs();
+                        if (inputs) {
+                            inputs.hours.value = hours.toString();
+                            inputs.minutes.value = minutes.toString();
+                            inputs.seconds.value = seconds.toString();
+                        }
                     }
                 }
-            });
-        });
-        document.getElementById('stopButton')?.addEventListener('click', () => {
+            };
+            timeButtonsContainer.addEventListener('click', timeButtonHandler);
+            this.boundEventListeners.set('timeButtonsContainer', timeButtonHandler);
+        }
+        // Outros botões de controle
+        this.addEventListenerWithCleanup('stopButton', 'click', () => {
             console.log('Botão stop clicado');
             this.timerController.stop();
         });
-        document.getElementById('resetButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('resetButton', 'click', () => {
             console.log('Botão reset clicado');
             this.timerController.reset();
         });
-        document.getElementById('pauseButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('pauseButton', 'click', () => {
             console.log('Botão pause clicado');
             this.timerController.pause();
         });
-        // Botão verde de próximo bloco
-        document.getElementById('nextBlocoButtonGreen')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('nextBlocoButtonGreen', 'click', () => {
             console.log('Botão próximo (verde) clicado');
             this.handleNextBloco();
-            // Esconder o botão após clicar
             const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
             if (nextBlocoButtonGreen) {
                 nextBlocoButtonGreen.classList.add('hidden');
             }
         });
         // Bloco controls
-        document.getElementById('addBlocoButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('addBlocoButton', 'click', () => {
             console.log('Botão adicionar bloco clicado');
             this.handleAddBloco();
         });
-        document.getElementById('resetBlocosButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('resetBlocosButton', 'click', () => {
             console.log('Botão resetar blocos clicado');
             this.handleResetBlocos();
         });
-        document.getElementById('prevBlocoButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('prevBlocoButton', 'click', () => {
             console.log('Botão bloco anterior clicado');
             this.handlePrevBloco();
         });
-        document.getElementById('nextBlocoButton')?.addEventListener('click', () => {
+        this.addEventListenerWithCleanup('nextBlocoButton', 'click', () => {
             console.log('Botão próximo bloco clicado');
             this.handleNextBloco();
         });

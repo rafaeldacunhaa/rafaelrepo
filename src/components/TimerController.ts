@@ -135,4 +135,10 @@ export class TimerController {
             input.value = cleanValue;
         }
     }
+
+    public cleanup(): void {
+        console.log('Limpando recursos do TimerController');
+        this.stop();
+        this.reset();
+    }
 } 

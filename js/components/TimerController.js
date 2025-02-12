@@ -108,5 +108,10 @@ export class TimerController {
             input.value = cleanValue;
         }
     }
+    cleanup() {
+        console.log('Limpando recursos do TimerController');
+        this.stop();
+        this.reset();
+    }
 }
 //# sourceMappingURL=TimerController.js.map

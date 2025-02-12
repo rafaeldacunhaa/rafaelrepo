@@ -24,6 +24,7 @@ export class Timer {
     private titleManager: TitleManager;
     private lastEndSound: number = 0;
     private readonly END_SOUND_INTERVAL = 5 * 60 * 1000; // 5 minutos em milissegundos
+    private lastUpdateTime: number = 0;
 
     constructor(audioService: AudioServiceInterface, notificationManager: NotificationManagerInterface) {
         this.audioService = audioService;
@@ -76,10 +77,7 @@ export class Timer {
     }
 
     start(milliseconds: number, onEnd?: () => void): void {
-        if (this.titleInterval) {
-            clearInterval(this.titleInterval);
-            document.title = this.originalTitle;
-        }
+        this.cleanup(); // Limpa recursos anteriores
         
         this.timerContainer.classList.remove('hidden');
         
@@ -88,10 +86,7 @@ export class Timer {
         this.playedWarning = false;
         this.playedEnd = false;
         this.onEnd = onEnd;
-        
-        if (this.interval) {
-            clearInterval(this.interval);
-        }
+        this.lastUpdateTime = milliseconds;
         
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
         this.timeDisplay.classList.remove('blink', 'text-yellow-500', 'text-red-500');
@@ -99,7 +94,7 @@ export class Timer {
         this.updateDisplay(milliseconds);
         this.updateProgress(milliseconds);
         
-        this.interval = window.setInterval(() => this.tick(), 100);
+        this.interval = window.setInterval(() => this.tick(), 250); // Reduzido para 250ms
         this.status = 'running';
         this.emit('start', { duration: milliseconds });
     }
@@ -127,11 +122,13 @@ export class Timer {
             }
         }
 
-        this.updateDisplay(remaining);
-        this.updateProgress(remaining);
-        this.emit('tick', remaining);
-        
-        requestAnimationFrame(() => this.tick());
+        // Atualiza a UI apenas se houver mudança significativa (a cada segundo)
+        if (Math.floor(remaining / 1000) !== Math.floor(this.lastUpdateTime / 1000)) {
+            this.updateDisplay(remaining);
+            this.updateProgress(remaining);
+            this.emit('tick', remaining);
+            this.lastUpdateTime = remaining;
+        }
     }
 
     private handleTimeWarning(): void {
@@ -210,10 +207,7 @@ export class Timer {
     }
 
     stop(): void {
-        if (this.interval) {
-            clearInterval(this.interval);
-            this.interval = null;
-        }
+        this.cleanup();
         
         this.timerContainer.classList.add('hidden');
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
@@ -223,8 +217,6 @@ export class Timer {
         if (nextBlocoButtonGreen) {
             nextBlocoButtonGreen.classList.add('hidden');
         }
-        
-        this.titleManager.reset();
         
         this.status = 'stopped';
         this.emit('stop', undefined);
@@ -294,6 +286,25 @@ export class Timer {
         const remaining = this.endTime - Date.now();
         const progress = ((this.duration - remaining) / this.duration) * 100;
         return Math.min(100, Math.max(0, progress));
+    }
+
+    private cleanup(): void {
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+        if (this.titleInterval) {
+            clearInterval(this.titleInterval);
+            this.titleInterval = null;
+            document.title = this.originalTitle;
+        }
+        
+        // Limpa callbacks antigos
+        this.callbacks.clear();
+        
+        // Reseta o PiP e Title
+        this.pipController.close();
+        this.titleManager.reset();
     }
 }
 

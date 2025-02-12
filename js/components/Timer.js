@@ -14,6 +14,7 @@ export class Timer {
         this.status = 'stopped';
         this.lastEndSound = 0;
         this.END_SOUND_INTERVAL = 5 * 60 * 1000; // 5 minutos em milissegundos
+        this.lastUpdateTime = 0;
         this.audioService = audioService;
         this.notificationManager = notificationManager;
         this.timeDisplay = document.getElementById('timeDisplay');
@@ -57,24 +58,19 @@ export class Timer {
         }
     }
     start(milliseconds, onEnd) {
-        if (this.titleInterval) {
-            clearInterval(this.titleInterval);
-            document.title = this.originalTitle;
-        }
+        this.cleanup(); // Limpa recursos anteriores
         this.timerContainer.classList.remove('hidden');
         this.duration = milliseconds;
         this.endTime = Date.now() + milliseconds;
         this.playedWarning = false;
         this.playedEnd = false;
         this.onEnd = onEnd;
-        if (this.interval) {
-            clearInterval(this.interval);
-        }
+        this.lastUpdateTime = milliseconds;
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
         this.timeDisplay.classList.remove('blink', 'text-yellow-500', 'text-red-500');
         this.updateDisplay(milliseconds);
         this.updateProgress(milliseconds);
-        this.interval = window.setInterval(() => this.tick(), 100);
+        this.interval = window.setInterval(() => this.tick(), 250); // Reduzido para 250ms
         this.status = 'running';
         this.emit('start', { duration: milliseconds });
     }
@@ -99,10 +95,13 @@ export class Timer {
                 }
             }
         }
-        this.updateDisplay(remaining);
-        this.updateProgress(remaining);
-        this.emit('tick', remaining);
-        requestAnimationFrame(() => this.tick());
+        // Atualiza a UI apenas se houver mudança significativa (a cada segundo)
+        if (Math.floor(remaining / 1000) !== Math.floor(this.lastUpdateTime / 1000)) {
+            this.updateDisplay(remaining);
+            this.updateProgress(remaining);
+            this.emit('tick', remaining);
+            this.lastUpdateTime = remaining;
+        }
     }
     handleTimeWarning() {
         this.playedWarning = true;
@@ -168,10 +167,7 @@ export class Timer {
         this.progressBar.style.cssText = `width: ${progress}% !important; transition: width 0.3s linear;`;
     }
     stop() {
-        if (this.interval) {
-            clearInterval(this.interval);
-            this.interval = null;
-        }
+        this.cleanup();
         this.timerContainer.classList.add('hidden');
         this.timerContainer.classList.remove('timer-ending', 'timer-ended');
         this.timeDisplay.classList.remove('blink', 'text-[#151634]', 'text-red-500');
@@ -179,7 +175,6 @@ export class Timer {
         if (nextBlocoButtonGreen) {
             nextBlocoButtonGreen.classList.add('hidden');
         }
-        this.titleManager.reset();
         this.status = 'stopped';
         this.emit('stop', undefined);
     }
@@ -242,6 +237,22 @@ export class Timer {
         const remaining = this.endTime - Date.now();
         const progress = ((this.duration - remaining) / this.duration) * 100;
         return Math.min(100, Math.max(0, progress));
+    }
+    cleanup() {
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+        if (this.titleInterval) {
+            clearInterval(this.titleInterval);
+            this.titleInterval = null;
+            document.title = this.originalTitle;
+        }
+        // Limpa callbacks antigos
+        this.callbacks.clear();
+        // Reseta o PiP e Title
+        this.pipController.close();
+        this.titleManager.reset();
     }
 }
 window.Timer = Timer;

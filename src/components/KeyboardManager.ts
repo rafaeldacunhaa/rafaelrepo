@@ -64,4 +64,9 @@ export class KeyboardManager {
         console.log('Recarregando event listeners de teclado');
         this.setupKeyboardShortcuts();
     }
+
+    public cleanup(): void {
+        console.log('Limpando event listeners de teclado');
+        document.removeEventListener('keydown', this.boundHandleKeyboardShortcut);
+    }
 } 
