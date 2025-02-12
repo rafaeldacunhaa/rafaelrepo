@@ -10,6 +10,7 @@ export interface PiPInfo {
 export class PiPManager {
     private pipWindow: any = null;
     private updateCallbacks: Set<() => void> = new Set();
+    private lastButtonState: boolean = false;
 
     public async open(initialInfo: PiPInfo): Promise<void> {
         if (this.pipWindow) {
@@ -46,13 +47,34 @@ export class PiPManager {
     public update(info: PiPInfo): void {
         if (!this.pipWindow) return;
 
+        // Verificar se o estado do botão e do próximo bloco
+        const currentButtonState = this.isNextButtonVisible();
+        const hasNextBlock = this.getNextBlock() !== null;
+        const hasNextBlockContainer = !!this.pipWindow.document.querySelector('.next-block-container');
+        
+        // Se houve mudança no estado, forçamos uma re-renderização completa
+        if (currentButtonState !== this.lastButtonState || 
+            (hasNextBlock && !hasNextBlockContainer)) {
+            console.log('PiP: Estado mudou, re-renderizando conteúdo', {
+                buttonStateChanged: currentButtonState !== this.lastButtonState,
+                currentButtonState,
+                lastButtonState: this.lastButtonState,
+                hasNextBlock,
+                hasNextBlockContainer
+            });
+            this.renderContent(info);
+            this.lastButtonState = currentButtonState;
+            return;
+        }
+
+        // Continua com a atualização normal se não houve mudança no botão
         const container = this.pipWindow.document.querySelector('.pip-container');
         const timeElement = this.pipWindow.document.querySelector('.time');
         const progressElement = this.pipWindow.document.querySelector('.progress-fill');
         const statusElement = this.pipWindow.document.querySelector('.status');
         const messageElement = this.pipWindow.document.querySelector('.message');
-        const nextBlockElement = this.pipWindow.document.querySelector('.next-block');
-        const nextBlockTitleElement = this.pipWindow.document.querySelector('.next-block-title');
+        const nextBlockContainer = this.pipWindow.document.querySelector('.next-block-container');
+        const nextBlockButton = this.pipWindow.document.querySelector('.next-block-button');
         const body = this.pipWindow.document.body;
 
         // Atualizar classes do timer baseado no estado
@@ -76,12 +98,15 @@ export class PiPManager {
 
         // Atualizar próximo bloco
         const nextBlock = this.getNextBlock();
-        if (nextBlockElement && nextBlockTitleElement) {
+        if (nextBlockContainer) {
             if (nextBlock) {
-                nextBlockTitleElement.textContent = nextBlock;
-                nextBlockElement.style.display = 'block';
+                const titleElement = nextBlockContainer.querySelector('.next-block-title');
+                if (titleElement) {
+                    titleElement.textContent = nextBlock;
+                }
+                nextBlockContainer.style.display = 'flex';
             } else {
-                nextBlockElement.style.display = 'none';
+                nextBlockContainer.style.display = 'none';
             }
         }
     }
@@ -160,10 +185,16 @@ export class PiPManager {
                 color: currentColor;
             }
 
+            .next-block-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                width: 100%;
+            }
+
             .next-block {
                 font-size: 11px;
                 opacity: 0.7;
-                margin-top: 8px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -173,6 +204,27 @@ export class PiPManager {
                 padding: 4px;
                 border-radius: 4px;
                 background: rgba(255, 255, 255, 0.1);
+            }
+
+            .next-block-button {
+                background: rgba(255, 255, 255, 0.2);
+                color: currentColor;
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+            }
+
+            .next-block-button:hover {
+                background: rgba(255, 255, 255, 0.3);
             }
 
             .next-block-label {
@@ -219,6 +271,19 @@ export class PiPManager {
         this.pipWindow.document.head.appendChild(style);
     }
 
+    private nextBlockHandler = (event: Event) => {
+        console.log('PiP: Clique no botão próximo');
+        
+        const nextButton = document.getElementById('nextBlocoButtonGreen');
+        if (nextButton) {
+            // Foca na janela principal
+            window.focus();
+            
+            // Clica no botão
+            nextButton.click();
+        }
+    };
+
     private renderContent(info: PiPInfo): void {
         const container = document.createElement('div');
         container.className = 'pip-container';
@@ -232,26 +297,62 @@ export class PiPManager {
             timeClasses.push('ended', 'blink');
         }
 
-        // Buscar o próximo bloco
+        // Buscar o próximo bloco e verificar se o botão verde está visível
         const nextBlock = this.getNextBlock();
-        const nextBlockHtml = nextBlock ? `
-            <div class="next-block">
-                <span class="next-block-label">Próximo:</span>
-                <span class="next-block-title">${nextBlock}</span>
-            </div>
-        ` : '';
+        const isNextButtonVisible = this.isNextButtonVisible();
 
-        container.innerHTML = `
+        console.log('PiP: Renderizando conteúdo:', {
+            nextBlock,
+            isNextButtonVisible
+        });
+
+        // Primeiro criamos o HTML base
+        let html = `
             <div class="header">
                 <div class="status">${this.getStatusText(info.status)}</div>
                 <div class="message">${info.blocoName || 'Timer em execução'}</div>
             </div>
             <div class="${timeClasses.join(' ')}">${info.timeDisplay}</div>
-            ${nextBlockHtml}
+        `;
+
+        // Se tiver próximo bloco, adiciona o container
+        if (nextBlock) {
+            html += `
+                <div class="next-block-container">
+                    <div class="next-block">
+                        <span class="next-block-label">Próximo:</span>
+                        <span class="next-block-title">${nextBlock}</span>
+                    </div>
+            `;
+
+            // Se o botão estiver visível, adiciona ele
+            if (isNextButtonVisible) {
+                html += `
+                    <button class="next-block-button" id="pipNextBlockButton">
+                        ⏭️ Abrir aplicação e ir para próximo bloco
+                    </button>
+                `;
+            }
+
+            html += `</div>`;
+        }
+
+        // Adiciona a barra de progresso
+        html += `
             <div class="progress-container">
                 <div class="progress-fill" style="width: ${info.progress}%"></div>
             </div>
         `;
+
+        container.innerHTML = html;
+
+        // Adicionar handler para o botão de próximo bloco
+        if (this.pipWindow) {
+            const nextButton = container.querySelector('#pipNextBlockButton');
+            if (nextButton) {
+                nextButton.addEventListener('click', this.nextBlockHandler);
+            }
+        }
 
         this.pipWindow.document.body.innerHTML = '';
         this.pipWindow.document.body.appendChild(container);
@@ -259,22 +360,61 @@ export class PiPManager {
 
     private getNextBlock(): string | null {
         const blocosList = document.getElementById('blocoList');
-        if (!blocosList) return null;
+        if (!blocosList) {
+            console.log('PiP: Lista de blocos não encontrada');
+            return null;
+        }
 
         // Encontrar o bloco ativo atual
         const activeBloco = blocosList.querySelector('.border-indigo-500, .border-indigo-400');
-        if (!activeBloco) return null;
+        if (!activeBloco) {
+            console.log('PiP: Nenhum bloco ativo encontrado');
+            return null;
+        }
 
         // Pegar o próximo elemento que seja um bloco
         const nextBloco = activeBloco.nextElementSibling;
-        if (!nextBloco) return null;
+        if (!nextBloco) {
+            console.log('PiP: Não há próximo bloco');
+            return null;
+        }
 
-        // Pegar o título do bloco - ajustando o seletor para pegar o texto do bloco
+        // Pegar o título do bloco
         const titleElement = nextBloco.querySelector('[data-bloco-title]') || 
                            nextBloco.querySelector('.bloco-title') ||
                            nextBloco.querySelector('.font-medium');
-                           
-        return titleElement?.textContent?.trim() || null;
+        
+        const title = titleElement?.textContent?.trim() || null;
+        console.log('PiP: Próximo bloco encontrado:', title);
+        return title;
+    }
+
+    private isNextButtonVisible(): boolean {
+        const nextButton = document.getElementById('nextBlocoButtonGreen');
+        if (!nextButton) {
+            console.log('PiP: Botão próximo não encontrado');
+            return false;
+        }
+
+        // Verifica se o botão está oculto por qualquer meio
+        const isHidden = nextButton.classList.contains('hidden');
+        const computedStyle = window.getComputedStyle(nextButton);
+        const isDisplayNone = computedStyle.display === 'none';
+        const isVisibilityHidden = computedStyle.visibility === 'hidden';
+        const isOpacityZero = computedStyle.opacity === '0';
+        
+        const isVisible = !isHidden && !isDisplayNone && !isVisibilityHidden && !isOpacityZero;
+        console.log('PiP: Estado do botão próximo:', {
+            element: nextButton,
+            classes: nextButton.classList.toString(),
+            isHidden,
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            opacity: computedStyle.opacity,
+            isVisible
+        });
+        
+        return isVisible;
     }
 
     private getStatusText(status: 'running' | 'paused' | 'stopped'): string {
