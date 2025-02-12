@@ -3,6 +3,8 @@ import { Bloco } from '../types/Bloco.js';
 
 export class BlocoRenderer {
     private blocoManager: BlocoManager;
+    private lastRenderState: string = '';
+    private boundEventListeners: Map<string, { edit: Function, delete: Function }> = new Map();
 
     constructor(blocoManager: BlocoManager) {
         this.blocoManager = blocoManager;
@@ -11,17 +13,49 @@ export class BlocoRenderer {
     public render(): void {
         console.log('Renderizando blocos...');
         
+        const blocos = this.blocoManager.getBlocos();
+        const currentState = JSON.stringify(blocos);
+        
+        // Só renderiza se houver mudança real no estado
+        if (this.lastRenderState === currentState) {
+            console.log('Estado não mudou, pulando renderização');
+            return;
+        }
+        
+        this.lastRenderState = currentState;
+        
         // Atualizar visibilidade dos elementos
         this.updateVisibility();
         
-        const blocos = this.blocoManager.getBlocos();
         if (blocos.length === 0) {
+            this.cleanup();
             return;
         }
 
         this.renderMainList();
         this.renderOverview();
         this.updateSummary();
+    }
+
+    private cleanup(): void {
+        // Limpa event listeners antigos
+        this.boundEventListeners.forEach((listeners, id) => {
+            const element = document.getElementById(`bloco-${id}`);
+            if (element) {
+                const editBtn = element.querySelector('.edit-bloco');
+                const deleteBtn = element.querySelector('.delete-bloco');
+                
+                editBtn?.removeEventListener('click', listeners.edit as any);
+                deleteBtn?.removeEventListener('click', listeners.delete as any);
+            }
+        });
+        this.boundEventListeners.clear();
+        
+        // Limpa conteúdo das listas
+        const blocosList = document.getElementById('blocoList');
+        const blocosOverviewList = document.getElementById('blocosOverviewList');
+        if (blocosList) blocosList.innerHTML = '';
+        if (blocosOverviewList) blocosOverviewList.innerHTML = '';
     }
 
     private renderMainList(): void {
@@ -38,11 +72,31 @@ export class BlocoRenderer {
             return;
         }
 
+        // Criar um fragmento para todas as atualizações
+        const fragment = document.createDocumentFragment();
         const templateContent = templateElement.innerHTML;
-        blocosList.innerHTML = blocos.map(bloco => this.renderBlocoItem(bloco, templateContent)).join('');
+        
+        blocos.forEach(bloco => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = this.renderBlocoItem(bloco, templateContent);
+            const blocoElement = tempDiv.firstElementChild;
+            if (blocoElement) {
+                this.setupBlocoEventListeners(blocoElement as HTMLElement, bloco);
+                fragment.appendChild(blocoElement);
+            }
+        });
 
-        this.updateLucideIcons();
-        this.setupBlocoEventListeners(blocos);
+        // Limpa listeners antigos
+        this.cleanup();
+        
+        // Atualiza o DOM uma única vez
+        blocosList.innerHTML = '';
+        blocosList.appendChild(fragment);
+
+        // Atualiza ícones após todas as mudanças no DOM
+        requestAnimationFrame(() => {
+            this.updateLucideIcons();
+        });
     }
 
     private renderBlocoItem(bloco: Bloco, template: string): string {
@@ -57,16 +111,22 @@ export class BlocoRenderer {
         (window as any).lucide.createIcons();
     }
 
-    private setupBlocoEventListeners(blocos: Bloco[]): void {
-        blocos.forEach(bloco => {
-            const element = document.getElementById(`bloco-${bloco.id}`);
-            if (!element) return;
+    private setupBlocoEventListeners(element: HTMLElement, bloco: Bloco): void {
+        const editBtn = element.querySelector('.edit-bloco');
+        const deleteBtn = element.querySelector('.delete-bloco');
 
-            const editBtn = element.querySelector('.edit-bloco');
-            const deleteBtn = element.querySelector('.delete-bloco');
+        // Criar funções bound para os listeners
+        const editListener = () => this.handleEditBloco(bloco.id);
+        const deleteListener = () => this.handleDeleteBloco(bloco.id);
 
-            editBtn?.addEventListener('click', () => this.handleEditBloco(bloco.id));
-            deleteBtn?.addEventListener('click', () => this.handleDeleteBloco(bloco.id));
+        // Adicionar os listeners
+        editBtn?.addEventListener('click', editListener);
+        deleteBtn?.addEventListener('click', deleteListener);
+
+        // Armazenar os listeners para limpeza posterior
+        this.boundEventListeners.set(bloco.id, {
+            edit: editListener,
+            delete: deleteListener
         });
     }
 
@@ -80,7 +140,19 @@ export class BlocoRenderer {
         }
 
         if (blocosOverviewList) {
-            blocosOverviewList.innerHTML = blocos.map(bloco => this.renderOverviewItem(bloco)).join('');
+            // Criar um fragmento para todas as atualizações
+            const fragment = document.createDocumentFragment();
+            blocos.forEach(bloco => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = this.renderOverviewItem(bloco);
+                const blocoElement = tempDiv.firstElementChild;
+                if (blocoElement) {
+                    fragment.appendChild(blocoElement);
+                }
+            });
+
+            blocosOverviewList.innerHTML = '';
+            blocosOverviewList.appendChild(fragment);
         }
 
         this.updateCurrentBlocoName(blocos);
@@ -169,38 +241,33 @@ export class BlocoRenderer {
         const blocos = this.blocoManager.getBlocos();
         const hasBlocks = blocos.length > 0;
 
-        // Elementos principais
+        // Cache dos elementos DOM
         const blocosPanel = document.getElementById('blocosPanel');
         const toggleBlocosOverview = document.getElementById('toggleBlocosOverview');
 
-        if (hasBlocks) {
-            // Mostrar o painel de blocos
-            if (blocosPanel) {
-                blocosPanel.classList.remove('hidden');
-                // Primeiro definir a largura
-                requestAnimationFrame(() => {
+        if (hasBlocks && blocosPanel) {
+            blocosPanel.classList.remove('hidden');
+            // Usar RAF para otimizar animações
+            requestAnimationFrame(() => {
+                if (blocosPanel) {
                     blocosPanel.style.width = '350px';
-                    blocosPanel.style.marginLeft = '32px'; // equivalente a ml-8
-                    // Depois fazer o fade in
-                    setTimeout(() => {
+                    blocosPanel.style.marginLeft = '32px';
+                    requestAnimationFrame(() => {
                         blocosPanel.classList.remove('opacity-0');
-                    }, 50);
-                });
-            }
-        } else {
-            // Esconder o painel de blocos
-            if (blocosPanel) {
-                // Primeiro esconder o conteúdo
-                blocosPanel.classList.add('opacity-0');
-                // Depois retrair o painel
-                setTimeout(() => {
+                    });
+                }
+            });
+        } else if (blocosPanel) {
+            blocosPanel.classList.add('opacity-0');
+            // Usar RAF para otimizar animações
+            requestAnimationFrame(() => {
+                if (blocosPanel) {
                     blocosPanel.style.width = '0';
                     blocosPanel.style.marginLeft = '0';
-                }, 300);
-            }
+                }
+            });
         }
 
-        // Atualizar visibilidade do botão de toggle
         if (toggleBlocosOverview) {
             toggleBlocosOverview.classList.toggle('hidden', !hasBlocks);
         }

@@ -17,7 +17,8 @@ export class Timer {
     private audioService: AudioServiceInterface;
     private notificationManager: NotificationManagerInterface;
     private originalTitle: string;
-    private callbacks: Map<string, Function[]> = new Map();
+    private systemCallbacks: Map<string, Function[]> = new Map();  // Para callbacks do sistema que não devem ser limpos
+    private callbacks: Map<string, Function[]> = new Map();        // Para callbacks temporários
     private status: TimerStatus = 'stopped';
     private onEnd?: () => void;
     private pipController: PiPController;
@@ -25,6 +26,9 @@ export class Timer {
     private lastEndSound: number = 0;
     private readonly END_SOUND_INTERVAL = 5 * 60 * 1000; // 5 minutos em milissegundos
     private lastUpdateTime: number = 0;
+    private lastPiPTime: string = '';
+    private lastPiPProgress: number = 0;
+    private lastPiPStatus: TimerStatus = 'stopped';
 
     constructor(audioService: AudioServiceInterface, notificationManager: NotificationManagerInterface) {
         this.audioService = audioService;
@@ -40,22 +44,39 @@ export class Timer {
             this.isPageVisible = !document.hidden;
         });
 
-        // Atualizar PiP quando o timer atualizar
-        this.on('tick', () => this.updatePiP());
-        this.on('stop', () => {
+        // Registrar callbacks do sistema que não devem ser limpos
+        this.registerSystemCallback('tick', () => this.updatePiP());
+        this.registerSystemCallback('stop', () => {
             this.pipController.close();
             this.titleManager.reset();
         });
-        this.on('pause', () => this.updatePiP());
-        this.on('start', () => this.updatePiP());
+        this.registerSystemCallback('pause', () => this.updatePiP());
+        this.registerSystemCallback('start', () => this.updatePiP());
 
         console.log('Timer inicializado!');
     }
 
+    private registerSystemCallback(event: string, callback: Function): void {
+        if (!this.systemCallbacks.has(event)) {
+            this.systemCallbacks.set(event, []);
+        }
+        const callbacks = this.systemCallbacks.get(event)!;
+        if (!callbacks.includes(callback)) {
+            callbacks.push(callback);
+        }
+    }
+
     private emit(event: string, ...args: any[]): void {
+        // Executar callbacks do sistema primeiro
+        const systemCallbacks = this.systemCallbacks.get(event);
+        if (systemCallbacks) {
+            [...systemCallbacks].forEach(callback => callback(...args));
+        }
+
+        // Depois executar callbacks temporários
         const eventCallbacks = this.callbacks.get(event);
         if (eventCallbacks) {
-            eventCallbacks.forEach(callback => callback(...args));
+            [...eventCallbacks].forEach(callback => callback(...args));
         }
     }
 
@@ -63,7 +84,10 @@ export class Timer {
         if (!this.callbacks.has(event)) {
             this.callbacks.set(event, []);
         }
-        this.callbacks.get(event)?.push(callback);
+        const callbacks = this.callbacks.get(event)!;
+        if (!callbacks.includes(callback)) {
+            callbacks.push(callback);
+        }
     }
 
     private off(event: string, callback: Function): void {
@@ -247,10 +271,11 @@ export class Timer {
 
     resume(): void {
         if (this.status === 'paused' && this.endTime) {
+            this.cleanup(); // Limpa recursos anteriores
             this.isPaused = false;
             const remaining = this.endTime - Date.now();
             this.endTime = Date.now() + remaining;
-            this.interval = window.setInterval(() => this.tick(), 100);
+            this.interval = window.setInterval(() => this.tick(), 250); // Corrigido para 250ms
             this.status = 'running';
             this.emit('start', { duration: remaining });
         }
@@ -266,14 +291,27 @@ export class Timer {
     }
 
     private updatePiP(): void {
-        this.pipController.updateInfo({
-            timeDisplay: this.timeDisplay.textContent || '',
-            blocoName: this.getCurrentBlocoName(),
-            status: this.status,
-            duration: this.duration,
-            remaining: this.getRemaining(),
-            progress: this.getProgressPercentage()
-        });
+        const currentTime = this.timeDisplay.textContent || '';
+        const currentProgress = this.getProgressPercentage();
+        
+        if (
+            currentTime !== this.lastPiPTime || 
+            Math.abs(currentProgress - this.lastPiPProgress) > 1 ||
+            this.status !== this.lastPiPStatus
+        ) {
+            this.pipController.updateInfo({
+                timeDisplay: currentTime,
+                blocoName: this.getCurrentBlocoName(),
+                status: this.status,
+                duration: this.duration,
+                remaining: this.getRemaining(),
+                progress: currentProgress
+            });
+            
+            this.lastPiPTime = currentTime;
+            this.lastPiPProgress = currentProgress;
+            this.lastPiPStatus = this.status;
+        }
     }
 
     private getCurrentBlocoName(): string {
@@ -299,12 +337,8 @@ export class Timer {
             document.title = this.originalTitle;
         }
         
-        // Limpa callbacks antigos
+        // Limpa apenas callbacks temporários
         this.callbacks.clear();
-        
-        // Reseta o PiP e Title
-        this.pipController.close();
-        this.titleManager.reset();
     }
 }
 
