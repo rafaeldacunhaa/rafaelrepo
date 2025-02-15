@@ -2,7 +2,37 @@ export class BlocoRenderer {
     constructor(blocoManager) {
         this.lastRenderState = '';
         this.boundEventListeners = new Map();
+        this.isFirstRender = true;
+        this.isInitialLoad = true;
+        this.hasInitialBlocks = false;
         this.blocoManager = blocoManager;
+        this.hasInitialBlocks = this.blocoManager.getBlocos().length > 0;
+        // Se já existem blocos, configura o painel como já aberto
+        if (this.hasInitialBlocks) {
+            this.setupInitialPanelState();
+        }
+    }
+    setupInitialPanelState() {
+        requestAnimationFrame(() => {
+            const blocosPanel = document.getElementById('blocosPanel');
+            if (blocosPanel) {
+                // Remove transições temporariamente
+                blocosPanel.style.transition = 'none';
+                blocosPanel.classList.remove('hidden', 'opacity-0');
+                blocosPanel.style.width = '350px';
+                blocosPanel.style.marginLeft = '32px';
+                // Força um reflow
+                blocosPanel.offsetHeight;
+                // Restaura as transições
+                requestAnimationFrame(() => {
+                    blocosPanel.style.transition = '';
+                });
+            }
+            const toggleBlocosOverview = document.getElementById('toggleBlocosOverview');
+            if (toggleBlocosOverview) {
+                toggleBlocosOverview.classList.remove('hidden');
+            }
+        });
     }
     render() {
         console.log('Renderizando blocos...');
@@ -196,25 +226,44 @@ export class BlocoRenderer {
     updateVisibility() {
         const blocos = this.blocoManager.getBlocos();
         const hasBlocks = blocos.length > 0;
+        const wasEmpty = !this.lastRenderState || this.lastRenderState === '[]';
+        // Só deve animar se:
+        // 1. Não é a carga inicial E
+        // 2. Estava vazio antes E
+        // 3. Agora tem blocos
+        const shouldAnimate = !this.isInitialLoad && wasEmpty && hasBlocks;
         // Cache dos elementos DOM
         const blocosPanel = document.getElementById('blocosPanel');
         const toggleBlocosOverview = document.getElementById('toggleBlocosOverview');
         if (hasBlocks && blocosPanel) {
-            blocosPanel.classList.remove('hidden');
-            // Usar RAF para otimizar animações
-            requestAnimationFrame(() => {
-                if (blocosPanel) {
-                    blocosPanel.style.width = '350px';
-                    blocosPanel.style.marginLeft = '32px';
-                    requestAnimationFrame(() => {
-                        blocosPanel.classList.remove('opacity-0');
-                    });
-                }
-            });
+            if (this.isInitialLoad && this.hasInitialBlocks) {
+                // Na carga inicial com blocos, apenas mantém o estado
+                blocosPanel.classList.remove('hidden', 'opacity-0');
+                blocosPanel.style.width = '350px';
+                blocosPanel.style.marginLeft = '32px';
+            }
+            else if (shouldAnimate) {
+                // Anima apenas quando adiciona o primeiro bloco
+                blocosPanel.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    if (blocosPanel) {
+                        blocosPanel.style.width = '350px';
+                        blocosPanel.style.marginLeft = '32px';
+                        requestAnimationFrame(() => {
+                            blocosPanel.classList.remove('opacity-0');
+                        });
+                    }
+                });
+            }
+            else {
+                // Para outras situações, apenas atualiza sem animação
+                blocosPanel.classList.remove('hidden', 'opacity-0');
+                blocosPanel.style.width = '350px';
+                blocosPanel.style.marginLeft = '32px';
+            }
         }
         else if (blocosPanel) {
             blocosPanel.classList.add('opacity-0');
-            // Usar RAF para otimizar animações
             requestAnimationFrame(() => {
                 if (blocosPanel) {
                     blocosPanel.style.width = '0';
@@ -225,6 +274,8 @@ export class BlocoRenderer {
         if (toggleBlocosOverview) {
             toggleBlocosOverview.classList.toggle('hidden', !hasBlocks);
         }
+        // Marca que não é mais a carga inicial após a primeira atualização
+        this.isInitialLoad = false;
     }
 }
 //# sourceMappingURL=BlocoRenderer.js.map
