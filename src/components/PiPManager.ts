@@ -11,6 +11,12 @@ export class PiPManager {
     private pipWindow: any = null;
     private updateCallbacks: Set<() => void> = new Set();
     private lastButtonState: boolean = false;
+    private pipVisibilityCheckInterval: number | null = null;
+    private isPiPVisible: boolean = true;
+    private pipLostFocusTime: number | null = null;
+    private wasAutoOpened: boolean = false;
+    private readonly VISIBILITY_CHECK_INTERVAL = 2000; // 2 segundos
+    private readonly PIP_LOST_FOCUS_THRESHOLD = 5000; // 5 segundos
 
     public async open(initialInfo: PiPInfo): Promise<void> {
         if (this.pipWindow) {
@@ -20,12 +26,16 @@ export class PiPManager {
         try {
             if ('documentPictureInPicture' in window) {
                 this.pipWindow = await (window as any).documentPictureInPicture.requestWindow({
-                    width: 300,
-                    height: 200
+                    width: 200,
+                    height: 80
                 });
 
                 this.setupStyles();
                 this.renderContent(initialInfo);
+                this.startVisibilityMonitoring();
+                this.isPiPVisible = true;
+                this.pipLostFocusTime = null;
+                this.wasAutoOpened = false; // Reset ao abrir manualmente
             }
         } catch (error) {
             console.log('Picture-in-Picture não suportado:', error);
@@ -34,14 +44,188 @@ export class PiPManager {
 
     public close(): void {
         if (this.pipWindow) {
+            this.stopVisibilityMonitoring();
             this.pipWindow.close();
             this.pipWindow = null;
             this.updateCallbacks.clear();
+            this.isPiPVisible = true;
+            this.pipLostFocusTime = null;
+            this.wasAutoOpened = false;
+            
+            // Disparar evento de que o PiP foi fechado
+            const event = new CustomEvent('pipClosed', {
+                detail: { pipManager: this }
+            });
+            document.dispatchEvent(event);
         }
     }
 
     public isOpen(): boolean {
         return this.pipWindow !== null;
+    }
+
+    public isVisible(): boolean {
+        return this.isPiPVisible;
+    }
+
+    public hasLostFocus(): boolean {
+        return this.pipLostFocusTime !== null;
+    }
+
+    public wasOpenedAutomatically(): boolean {
+        return this.wasAutoOpened;
+    }
+
+    public markAsAutoOpened(): void {
+        this.wasAutoOpened = true;
+    }
+
+    public resetAutoOpenState(): void {
+        this.wasAutoOpened = false;
+    }
+
+    private startVisibilityMonitoring(): void {
+        if (this.pipVisibilityCheckInterval) {
+            clearInterval(this.pipVisibilityCheckInterval);
+        }
+
+        this.pipVisibilityCheckInterval = window.setInterval(() => {
+            this.checkPiPVisibility();
+        }, this.VISIBILITY_CHECK_INTERVAL);
+    }
+
+    private stopVisibilityMonitoring(): void {
+        if (this.pipVisibilityCheckInterval) {
+            clearInterval(this.pipVisibilityCheckInterval);
+            this.pipVisibilityCheckInterval = null;
+        }
+    }
+
+    private checkPiPVisibility(): void {
+        if (!this.pipWindow) return;
+
+        try {
+            // Verificar se a janela PiP ainda está ativa
+            const isWindowActive = !this.pipWindow.closed;
+            
+            if (isWindowActive) {
+                // PiP está ativo
+                if (!this.isPiPVisible) {
+                    console.log('PiP: Recuperou visibilidade');
+                    this.isPiPVisible = true;
+                    this.pipLostFocusTime = null;
+                }
+            } else {
+                // PiP foi fechado
+                console.log('PiP: Janela foi fechada');
+                this.close();
+            }
+        } catch (error) {
+            // Se houver erro ao acessar a janela PiP, provavelmente foi fechada
+            console.log('PiP: Erro ao verificar visibilidade, fechando...');
+            this.close();
+        }
+    }
+
+    private onPiPVisibilityChanged(isVisible: boolean): void {
+        // Disparar evento customizado para notificar outros componentes
+        const event = new CustomEvent('pipVisibilityChanged', {
+            detail: {
+                isVisible,
+                pipManager: this
+            }
+        });
+        document.dispatchEvent(event);
+    }
+
+    public async restore(): Promise<void> {
+        if (!this.pipWindow || this.pipWindow.closed) {
+            // Se a janela foi fechada, reabrir
+            const lastInfo = this.getLastInfo();
+            await this.open(lastInfo);
+        } else {
+            // Se ainda está aberta mas não visível, focar nela
+            try {
+                this.pipWindow.focus();
+                this.isPiPVisible = true;
+                this.pipLostFocusTime = null;
+                this.onPiPVisibilityChanged(true);
+            } catch (error) {
+                console.log('PiP: Erro ao focar janela, reabrindo...');
+                const lastInfo = this.getLastInfo();
+                await this.open(lastInfo);
+            }
+        }
+    }
+
+    private getLastInfo(): PiPInfo {
+        // Buscar informações atuais do timer
+        const timeDisplay = document.getElementById('timeDisplay')?.textContent || '00:00';
+        const blocoName = document.getElementById('currentBlocoName')?.textContent || 'Timer em execução';
+        const progressBar = document.getElementById('progressBar');
+        const progress = progressBar ? parseFloat(progressBar.style.width || '0') : 0;
+        
+        // Determinar status baseado nas classes do botão de pause
+        const pauseButton = document.getElementById('pauseButton');
+        let status: 'running' | 'paused' | 'stopped' = 'stopped';
+        
+        if (pauseButton) {
+            if (pauseButton.textContent?.includes('Pausar')) {
+                status = 'running';
+            } else if (pauseButton.textContent?.includes('Continuar')) {
+                status = 'paused';
+            }
+        }
+
+        // Calcular duração e tempo restante
+        const duration = this.calculateDuration();
+        const remaining = this.calculateRemaining();
+
+        return {
+            timeDisplay,
+            blocoName,
+            status,
+            duration,
+            remaining,
+            progress
+        };
+    }
+
+    private calculateDuration(): number {
+        // Buscar duração total dos blocos
+        const blocosList = document.getElementById('blocoList');
+        if (!blocosList) return 0;
+
+        let totalDuration = 0;
+        const blocos = blocosList.querySelectorAll('li');
+        
+        blocos.forEach(bloco => {
+            const durationText = bloco.textContent?.match(/(\d+)min/);
+            if (durationText) {
+                totalDuration += parseInt(durationText[1]) * 60; // Converter para segundos
+            }
+        });
+
+        return totalDuration;
+    }
+
+    private calculateRemaining(): number {
+        // Buscar tempo restante do timer atual
+        const timeDisplay = document.getElementById('timeDisplay');
+        if (!timeDisplay) return 0;
+
+        const timeText = timeDisplay.textContent || '';
+        const timeParts = timeText.split(':').map(Number);
+        
+        if (timeParts.length === 2) {
+            // Formato MM:SS
+            return timeParts[0] * 60 + timeParts[1];
+        } else if (timeParts.length === 3) {
+            // Formato HH:MM:SS
+            return timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2];
+        }
+
+        return 0;
     }
 
     public update(info: PiPInfo): void {
@@ -116,139 +300,117 @@ export class PiPManager {
         style.textContent = `
             body { 
                 margin: 0; 
+                padding: 0;
                 display: flex; 
                 align-items: center; 
                 justify-content: center;
-                background: white;
+                background: rgba(255, 255, 255, 0.98);
                 color: rgb(31 41 55);
                 font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
                 min-height: 100vh;
-                transition: background-color 0.3s ease;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(8px);
+                border-radius: 6px;
+                overflow: hidden;
+                box-sizing: border-box;
             }
 
             body.timer-ending {
-                background: #151634 !important;
+                background: rgba(21, 22, 52, 0.98) !important;
                 color: white !important;
             }
 
             body.timer-ended {
-                background: rgb(239 68 68) !important;
+                background: rgba(239, 68, 68, 0.98) !important;
                 color: white !important;
             }
 
             @media (prefers-color-scheme: dark) {
                 body {
-                    background: rgb(17 24 39);
+                    background: rgba(17, 24, 39, 0.98);
                     color: rgb(243 244 246);
                 }
             }
 
             .pip-container {
-                text-align: center;
-                padding: 12px;
                 width: 100%;
-                display: grid;
-                grid-template-columns: 1fr;
-                grid-gap: 8px;
+                height: 100%;
+                display: flex;
                 align-items: center;
-                justify-items: center;
+                justify-content: center;
+                padding: 4px;
+                box-sizing: border-box;
+            }
+
+            .main-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+                height: 100%;
+            }
+
+            .left-section {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                flex-shrink: 0;
+            }
+
+            .right-section {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                flex: 1;
+                min-width: 0;
             }
 
             .status {
                 display: inline-block;
-                padding: 2px 6px;
-                border-radius: 4px;
-                background: rgba(255, 255, 255, 0.2);
+                padding: 1px 2px;
+                border-radius: 2px;
+                background: rgba(0, 0, 0, 0.06);
                 color: currentColor;
-                font-size: 11px;
+                font-size: 7px;
                 font-weight: 500;
-                backdrop-filter: blur(4px);
+                opacity: 0.8;
+                line-height: 1;
             }
 
             .time {
-                font-size: 48px;
+                font-size: 20px;
                 font-weight: 700;
                 line-height: 1;
                 font-variant-numeric: tabular-nums;
                 transition: color 0.3s;
-                margin: 4px 0;
+                margin: 0;
                 color: currentColor;
             }
 
             .message {
-                font-size: 14px;
-                font-weight: 600;
+                font-size: 9px;
+                font-weight: 500;
                 margin: 0;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 color: currentColor;
-            }
-
-            .next-block-container {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                width: 100%;
-            }
-
-            .next-block {
-                font-size: 11px;
-                opacity: 0.7;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                width: 100%;
-                text-align: center;
-                color: currentColor;
-                padding: 4px;
-                border-radius: 4px;
-                background: rgba(255, 255, 255, 0.1);
-            }
-
-            .next-block-button {
-                background: rgba(255, 255, 255, 0.2);
-                color: currentColor;
-                border: none;
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-size: 12px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: background-color 0.2s;
-                width: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 4px;
-            }
-
-            .next-block-button:hover {
-                background: rgba(255, 255, 255, 0.3);
-            }
-
-            .next-block-label {
-                font-weight: 600;
-                margin-right: 4px;
-                opacity: 0.8;
-            }
-
-            .next-block-title {
-                font-weight: 500;
+                opacity: 0.9;
+                line-height: 1;
             }
 
             .progress-container {
                 width: 100%;
-                height: 4px;
-                background: rgba(0, 0, 0, 0.1);
+                height: 2px;
+                background: rgba(0, 0, 0, 0.08);
                 border-radius: 9999px;
                 overflow: hidden;
-                margin-top: 8px;
             }
 
             body.timer-ending .progress-container,
             body.timer-ended .progress-container {
-                background: rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.15);
             }
 
             .progress-fill {
@@ -256,6 +418,46 @@ export class PiPManager {
                 background: currentColor;
                 border-radius: 9999px;
                 transition: width 0.3s linear;
+            }
+
+            .next-info {
+                display: flex;
+                align-items: center;
+                gap: 2px;
+                font-size: 7px;
+                opacity: 0.7;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .next-label {
+                font-weight: 600;
+                opacity: 0.8;
+            }
+
+            .next-title {
+                font-weight: 500;
+                max-width: 60px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .next-button {
+                background: rgba(0, 0, 0, 0.08);
+                color: currentColor;
+                border: none;
+                border-radius: 2px;
+                padding: 1px 3px;
+                font-size: 7px;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                line-height: 1;
+                margin-left: auto;
+            }
+
+            .next-button:hover {
+                background: rgba(0, 0, 0, 0.15);
             }
 
             .timer-ending .progress-fill {
@@ -306,41 +508,41 @@ export class PiPManager {
             isNextButtonVisible
         });
 
-        // Primeiro criamos o HTML base
+        // Layout horizontal ultra-compacto
         let html = `
-            <div class="header">
-                <div class="status">${this.getStatusText(info.status)}</div>
-                <div class="message">${info.blocoName || 'Timer em execução'}</div>
-            </div>
-            <div class="${timeClasses.join(' ')}">${info.timeDisplay}</div>
+            <div class="main-row">
+                <div class="left-section">
+                    <div class="status">${this.getStatusText(info.status)}</div>
+                    <div class="${timeClasses.join(' ')}">${info.timeDisplay}</div>
+                </div>
+                <div class="right-section">
+                    <div class="message">${info.blocoName || 'Timer'}</div>
+                    <div class="progress-container">
+                        <div class="progress-fill" style="width: ${info.progress}%"></div>
+                    </div>
         `;
 
-        // Se tiver próximo bloco, adiciona o container
+        // Se tiver próximo bloco, adiciona de forma compacta
         if (nextBlock) {
             html += `
-                <div class="next-block-container">
-                    <div class="next-block">
-                        <span class="next-block-label">Próximo:</span>
-                        <span class="next-block-title">${nextBlock}</span>
+                    <div class="next-info">
+                        <span class="next-label">→</span>
+                        <span class="next-title">${nextBlock}</span>
                     </div>
             `;
 
             // Se o botão estiver visível, adiciona ele
             if (isNextButtonVisible) {
                 html += `
-                    <button class="next-block-button" id="pipNextBlockButton">
-                        ⏭️ Abrir aplicação e ir para próximo bloco
+                    <button class="next-button" id="pipNextBlockButton" title="Próximo bloco">
+                        ⏭️
                     </button>
                 `;
             }
-
-            html += `</div>`;
         }
 
-        // Adiciona a barra de progresso
         html += `
-            <div class="progress-container">
-                <div class="progress-fill" style="width: ${info.progress}%"></div>
+                </div>
             </div>
         `;
 
@@ -372,9 +574,9 @@ export class PiPManager {
             return null;
         }
 
-        // Pegar o próximo elemento que seja um bloco
+        // Pegar o próximo elemento que seja um bloco (elemento li)
         const nextBloco = activeBloco.nextElementSibling;
-        if (!nextBloco) {
+        if (!nextBloco || nextBloco.tagName !== 'LI') {
             console.log('PiP: Não há próximo bloco');
             return null;
         }
@@ -396,6 +598,13 @@ export class PiPManager {
             return false;
         }
 
+        // Verifica se há próximo bloco antes de verificar se o botão está visível
+        const nextBlock = this.getNextBlock();
+        if (!nextBlock) {
+            console.log('PiP: Não há próximo bloco, botão não deve ser visível');
+            return false;
+        }
+
         // Verifica se o botão está oculto por qualquer meio
         const isHidden = nextButton.classList.contains('hidden');
         const computedStyle = window.getComputedStyle(nextButton);
@@ -411,7 +620,8 @@ export class PiPManager {
             display: computedStyle.display,
             visibility: computedStyle.visibility,
             opacity: computedStyle.opacity,
-            isVisible
+            isVisible,
+            hasNextBlock: !!nextBlock
         });
         
         return isVisible;
@@ -420,11 +630,11 @@ export class PiPManager {
     private getStatusText(status: 'running' | 'paused' | 'stopped'): string {
         switch (status) {
             case 'running':
-                return '▶️ Em execução';
+                return '▶';
             case 'paused':
-                return '⏸️ Pausado';
+                return '⏸';
             case 'stopped':
-                return '⏹️ Parado';
+                return '⏹';
             default:
                 return '';
         }

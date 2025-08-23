@@ -26,9 +26,18 @@ export class UIManager {
         console.log('Limpando recursos do UIManager...');
         // Remove todos os event listeners
         this.boundEventListeners.forEach((listener, elementId) => {
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.removeEventListener('click', listener);
+            if (elementId.startsWith('predefined-time-')) {
+                // Para botões pré-configurados, encontrar o botão pelo data-time
+                const timeValue = elementId.replace('predefined-time-', '');
+                const button = document.querySelector(`[data-time="${timeValue}"]`);
+                if (button) {
+                    button.removeEventListener('click', listener);
+                }
+            } else {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.removeEventListener('click', listener);
+                }
             }
         });
         this.boundEventListeners.clear();
@@ -70,30 +79,43 @@ export class UIManager {
                 blocosOverview.classList.add('translate-x-full');
             }
         });
-        // Botões predefinidos de tempo - usando delegação de eventos
-        const timeButtonsContainer = document.querySelector('.time-buttons-container');
-        if (timeButtonsContainer) {
-            const timeButtonHandler = (e) => {
-                const target = e.target;
-                if (target.classList.contains('predefined-time')) {
-                    const timeInSeconds = parseInt(target.dataset.time || '0');
-                    console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
-                    if (timeInSeconds > 0) {
-                        const hours = Math.floor(timeInSeconds / 3600);
-                        const minutes = Math.floor((timeInSeconds % 3600) / 60);
-                        const seconds = timeInSeconds % 60;
-                        const inputs = this.getTimeInputs();
-                        if (inputs) {
-                            inputs.hours.value = hours.toString();
-                            inputs.minutes.value = minutes.toString();
-                            inputs.seconds.value = seconds.toString();
+        // Botões predefinidos de tempo - implementação direta nos botões
+        console.log('Configurando botões pré-configurados...');
+        
+        // Usar setTimeout para garantir que os elementos estejam disponíveis
+        setTimeout(() => {
+            const predefinedTimeButtons = document.querySelectorAll('.predefined-time');
+            console.log('Botões pré-configurados encontrados:', predefinedTimeButtons.length);
+            
+            predefinedTimeButtons.forEach((button, index) => {
+                console.log(`Configurando botão ${index + 1}:`, button.textContent, 'data-time:', button.dataset.time);
+                const timeButtonHandler = (e) => {
+                    const target = e.target;
+                    if (target.classList.contains('predefined-time')) {
+                        const timeInSeconds = parseInt(target.dataset.time || '0');
+                        console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
+                        if (timeInSeconds > 0) {
+                            const hours = Math.floor(timeInSeconds / 3600);
+                            const minutes = Math.floor((timeInSeconds % 3600) / 60);
+                            const seconds = timeInSeconds % 60;
+                            const inputs = this.getTimeInputs();
+                            if (inputs) {
+                                inputs.hours.value = hours.toString();
+                                inputs.minutes.value = minutes.toString();
+                                inputs.seconds.value = seconds.toString();
+                                console.log('Tempo configurado:', { hours, minutes, seconds });
+                            } else {
+                                console.error('Inputs não encontrados');
+                            }
                         }
                     }
-                }
-            };
-            timeButtonsContainer.addEventListener('click', timeButtonHandler);
-            this.boundEventListeners.set('timeButtonsContainer', timeButtonHandler);
-        }
+                };
+                button.addEventListener('click', timeButtonHandler);
+                // Armazenar o listener para limpeza posterior
+                this.boundEventListeners.set(`predefined-time-${button.dataset.time}`, timeButtonHandler);
+            });
+            console.log('Botões pré-configurados configurados com sucesso');
+        }, 200);
         // Outros botões de controle
         this.addEventListenerWithCleanup('stopButton', 'click', () => {
             console.log('Botão stop clicado');
@@ -161,7 +183,8 @@ export class UIManager {
         console.log('Título do bloco:', title);
         this.blocoManager.addBloco(title, totalMinutes);
         this.blocoRenderer.render();
-        this.clearTimeInputs(inputs);
+        // Não limpar os campos para permitir reutilizar o mesmo tempo
+        // this.clearTimeInputs(inputs);
     }
     validateTimerMode() {
         const timerManualMode = document.getElementById('timerManualMode');
@@ -217,16 +240,16 @@ export class UIManager {
         console.log('Resetando blocos...');
         this.blocoManager.resetBlocos();
         this.blocoRenderer.render();
-        // Limpar os inputs de tempo
-        const hoursInput = document.getElementById('hours');
-        const minutesInput = document.getElementById('minutes');
-        const secondsInput = document.getElementById('seconds');
-        if (hoursInput)
-            hoursInput.value = '0';
-        if (minutesInput)
-            minutesInput.value = '0';
-        if (secondsInput)
-            secondsInput.value = '0';
+        // Não limpar os inputs de tempo para manter os valores configurados
+        // const hoursInput = document.getElementById('hours');
+        // const minutesInput = document.getElementById('minutes');
+        // const secondsInput = document.getElementById('seconds');
+        // if (hoursInput)
+        //     hoursInput.value = '0';
+        // if (minutesInput)
+        //     minutesInput.value = '0';
+        // if (secondsInput)
+        //     secondsInput.value = '0';
         console.log('Blocos resetados com sucesso');
     }
     handlePrevBloco() {
