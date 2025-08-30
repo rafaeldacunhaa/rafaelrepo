@@ -3,4 +3,5 @@ export interface Bloco {
     title: string;
     duration: number;
     isActive: boolean;
+    isDone: boolean;
 } 

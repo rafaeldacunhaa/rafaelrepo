@@ -98,6 +98,45 @@
     position: relative;
     border: 2px solid #10b981;
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+
+/* Estilos para edição inline dos blocos */
+.bloco-edit-mode input {
+    transition: all 0.2s ease-in-out;
+}
+
+.bloco-edit-mode input:focus {
+    outline: none;
+    border-color: var(--climba-blue);
+    box-shadow: 0 0 0 2px rgba(21, 22, 52, 0.2);
+}
+
+.bloco-edit-mode input:hover {
+    border-color: var(--climba-blue);
+}
+
+/* Animação suave para transição entre modos */
+.bloco-view-mode,
+.bloco-edit-mode,
+.bloco-view-buttons,
+.bloco-edit-buttons {
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Estilo para campos de edição em modo escuro */
+.dark .bloco-edit-mode input {
+    background-color: #374151;
+    border-color: #6b7280;
+    color: #f9fafb;
+}
+
+.dark .bloco-edit-mode input:focus {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.dark .bloco-edit-mode input:hover {
+    border-color: #ffffff;
+}
 }
 
 #pipButton.auto-pip-enabled::before {

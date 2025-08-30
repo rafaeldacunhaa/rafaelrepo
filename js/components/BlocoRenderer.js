@@ -44,6 +44,8 @@ export class BlocoRenderer {
             return;
         }
         this.lastRenderState = currentState;
+        // Sair de todos os modos de edição antes de re-renderizar
+        this.exitAllEditModes();
         // Atualizar visibilidade dos elementos
         this.updateVisibility();
         if (blocos.length === 0) {
@@ -54,15 +56,33 @@ export class BlocoRenderer {
         this.renderOverview();
         this.updateSummary();
     }
+    renderActiveBlocoOnly() {
+        // Renderiza apenas o bloco ativo sem re-renderizar toda a lista
+        // Isso é útil quando apenas o status ativo muda
+        const blocos = this.blocoManager.getBlocos();
+        const activeBloco = blocos.find(b => b.isActive);
+        if (activeBloco) {
+            // Atualizar apenas o nome do bloco ativo na interface do timer
+            this.updateCurrentBlocoName(blocos);
+            // Atualizar apenas o overview se necessário
+            this.renderOverview();
+        }
+    }
     cleanup() {
         // Limpa event listeners antigos
         this.boundEventListeners.forEach((listeners, id) => {
             const element = document.getElementById(`bloco-${id}`);
             if (element) {
+                const toggleDoneBtn = element.querySelector('.toggle-done-bloco');
                 const editBtn = element.querySelector('.edit-bloco');
                 const deleteBtn = element.querySelector('.delete-bloco');
+                const saveBtn = element.querySelector('.save-bloco');
+                const cancelBtn = element.querySelector('.cancel-edit');
+                toggleDoneBtn?.removeEventListener('click', listeners.toggleDone);
                 editBtn?.removeEventListener('click', listeners.edit);
                 deleteBtn?.removeEventListener('click', listeners.delete);
+                saveBtn?.removeEventListener('click', listeners.save);
+                cancelBtn?.removeEventListener('click', listeners.cancel);
             }
         });
         this.boundEventListeners.clear();
@@ -109,28 +129,50 @@ export class BlocoRenderer {
         });
     }
     renderBlocoItem(bloco, template) {
+        const doneClass = bloco.isDone ? 'bg-green-50 dark:bg-green-900/30 border-l-4 border-l-green-500' : '';
+        const doneTextClass = bloco.isDone ? 'line-through text-gray-500 dark:text-gray-400' : '';
+        const doneButtonClass = bloco.isDone ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500';
+        const doneButtonTitle = bloco.isDone ? 'Marcar como não feito' : 'Marcar como feito';
+        const doneIcon = bloco.isDone ? 'check-circle' : 'circle';
         return template
             .replace(/\${id}/g, bloco.id)
             .replace(/\${title}/g, bloco.title)
             .replace(/\${duration}/g, bloco.duration.toString())
-            .replace(/\${activeClass}/g, bloco.isActive ? 'border-2 border-indigo-500 dark:border-indigo-400' : '');
+            .replace(/\${activeClass}/g, bloco.isActive ? 'border-2 border-indigo-500 dark:border-indigo-400' : '')
+            .replace(/\${doneClass}/g, doneClass)
+            .replace(/\${doneTextClass}/g, doneTextClass)
+            .replace(/\${doneButtonClass}/g, doneButtonClass)
+            .replace(/\${doneButtonTitle}/g, doneButtonTitle)
+            .replace(/\${doneIcon}/g, doneIcon);
     }
     updateLucideIcons() {
         window.lucide.createIcons();
     }
     setupBlocoEventListeners(element, bloco) {
+        const toggleDoneBtn = element.querySelector('.toggle-done-bloco');
         const editBtn = element.querySelector('.edit-bloco');
         const deleteBtn = element.querySelector('.delete-bloco');
+        const saveBtn = element.querySelector('.save-bloco');
+        const cancelBtn = element.querySelector('.cancel-edit');
         // Criar funções bound para os listeners
-        const editListener = () => this.handleEditBloco(bloco.id);
+        const toggleDoneListener = () => this.handleToggleDoneBloco(bloco.id);
+        const editListener = () => this.handleEditBlocoInline(bloco.id);
         const deleteListener = () => this.handleDeleteBloco(bloco.id);
+        const saveListener = () => this.handleSaveBlocoInline(bloco.id);
+        const cancelListener = () => this.handleCancelEditInline(bloco.id);
         // Adicionar os listeners
+        toggleDoneBtn?.addEventListener('click', toggleDoneListener);
         editBtn?.addEventListener('click', editListener);
         deleteBtn?.addEventListener('click', deleteListener);
+        saveBtn?.addEventListener('click', saveListener);
+        cancelBtn?.addEventListener('click', cancelListener);
         // Armazenar os listeners para limpeza posterior
         this.boundEventListeners.set(bloco.id, {
             edit: editListener,
-            delete: deleteListener
+            delete: deleteListener,
+            toggleDone: toggleDoneListener,
+            save: saveListener,
+            cancel: cancelListener
         });
     }
     renderOverview() {
@@ -157,9 +199,15 @@ export class BlocoRenderer {
         this.updateCurrentBlocoName(blocos);
     }
     renderOverviewItem(bloco) {
+        const doneClass = bloco.isDone ? 'bg-green-100 dark:bg-green-900' : '';
+        const doneTextClass = bloco.isDone ? 'line-through text-gray-500 dark:text-gray-400' : '';
+        const doneIcon = bloco.isDone ? '✓' : '';
         return `
-            <li class="p-3 rounded-lg ${bloco.isActive ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-gray-50 dark:bg-gray-700'}">
-                <div class="font-medium ${bloco.isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-800 dark:text-white'}">${bloco.title}</div>
+            <li class="p-3 rounded-lg ${bloco.isActive ? 'bg-indigo-100 dark:bg-indigo-900' : doneClass || 'bg-gray-50 dark:bg-gray-700'}">
+                <div class="font-medium ${bloco.isActive ? 'text-indigo-600 dark:text-indigo-400' : doneTextClass || 'text-gray-800 dark:text-white'} flex items-center gap-2">
+                    ${bloco.title}
+                    ${doneIcon ? `<span class="text-green-600 dark:text-green-400 text-sm">${doneIcon}</span>` : ''}
+                </div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">${bloco.duration} minutos</div>
             </li>
         `;
@@ -167,8 +215,20 @@ export class BlocoRenderer {
     updateCurrentBlocoName(blocos) {
         const currentBlocoName = document.getElementById('currentBlocoName');
         const activeBloco = blocos.find(b => b.isActive);
-        if (currentBlocoName && activeBloco) {
-            currentBlocoName.textContent = activeBloco.title;
+        if (currentBlocoName) {
+            if (activeBloco) {
+                currentBlocoName.textContent = activeBloco.title;
+            }
+            else {
+                // Verificar se todos os blocos estão concluídos
+                const allDone = blocos.length > 0 && blocos.every(b => b.isDone);
+                if (allDone) {
+                    currentBlocoName.textContent = '🎉 Todos os blocos concluídos!';
+                }
+                else {
+                    currentBlocoName.textContent = 'Nenhum bloco ativo';
+                }
+            }
         }
     }
     updateSummary() {
@@ -185,8 +245,11 @@ export class BlocoRenderer {
         const totalMinutes = blocos.reduce((total, bloco) => total + bloco.duration, 0);
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
+        const doneCount = blocos.filter(bloco => bloco.isDone).length;
+        const totalCount = blocos.length;
         this.updateTempoTotal(hours, minutes);
         this.updateHorarioTermino(totalMinutes);
+        this.updateBlocosProgress(doneCount, totalCount);
     }
     updateTempoTotal(hours, minutes) {
         const tempoTotal = document.getElementById('tempoTotal');
@@ -202,20 +265,136 @@ export class BlocoRenderer {
             horarioTermino.textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         }
     }
-    handleEditBloco(id) {
-        const blocos = this.blocoManager.getBlocos();
-        const bloco = blocos.find(b => b.id === id);
-        if (!bloco)
-            return;
-        const newTitle = prompt('Novo título:', bloco.title);
-        const newDuration = prompt('Nova duração (minutos):', bloco.duration.toString());
-        if (newTitle && newDuration) {
-            const duration = parseInt(newDuration);
-            if (!isNaN(duration) && duration > 0) {
-                this.blocoManager.updateBloco(id, newTitle, duration);
-                this.render();
+    updateBlocosProgress(doneCount, totalCount) {
+        const blocosSummary = document.getElementById('blocosSummary');
+        if (blocosSummary && totalCount > 0) {
+            const progressElement = blocosSummary.querySelector('.blocos-progress');
+            if (progressElement) {
+                let progressText = `${doneCount}/${totalCount} blocos concluídos`;
+                // Adicionar mensagem especial quando todos estão concluídos
+                if (doneCount === totalCount) {
+                    progressText += ' 🎉 Todos concluídos!';
+                    progressElement.classList.add('text-green-600', 'dark:text-green-400', 'font-medium');
+                }
+                else {
+                    progressElement.classList.remove('text-green-600', 'dark:text-green-400', 'font-medium');
+                }
+                progressElement.textContent = progressText;
             }
         }
+    }
+    handleEditBlocoInline(id) {
+        const element = document.getElementById(`bloco-${id}`);
+        if (!element)
+            return;
+        // Salvar valores originais para cancelamento
+        const originalTitle = element.querySelector('.bloco-title')?.textContent || '';
+        const originalDuration = element.querySelector('.bloco-duration')?.textContent?.replace('min', '') || '';
+        element.setAttribute('data-original-title', originalTitle);
+        element.setAttribute('data-original-duration', originalDuration);
+        // Alternar para modo de edição
+        const viewMode = element.querySelector('.bloco-view-mode');
+        const editMode = element.querySelector('.bloco-edit-mode');
+        const viewButtons = element.querySelector('.bloco-view-buttons');
+        const editButtons = element.querySelector('.bloco-edit-buttons');
+        if (viewMode && editMode && viewButtons && editButtons) {
+            viewMode.classList.add('hidden');
+            editMode.classList.remove('hidden');
+            viewButtons.classList.add('hidden');
+            editButtons.classList.remove('hidden');
+        }
+        // Focar no campo de título
+        const titleInput = element.querySelector('.bloco-title-input');
+        const durationInput = element.querySelector('.bloco-duration-input');
+        if (titleInput) {
+            titleInput.focus();
+            titleInput.select();
+            // Adicionar listeners para teclas
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    this.handleSaveBlocoInline(id);
+                }
+                else if (e.key === 'Escape') {
+                    this.handleCancelEditInline(id);
+                }
+            };
+            const handleDurationKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    this.handleSaveBlocoInline(id);
+                }
+                else if (e.key === 'Escape') {
+                    this.handleCancelEditInline(id);
+                }
+            };
+            titleInput.addEventListener('keydown', handleKeyPress);
+            if (durationInput) {
+                durationInput.addEventListener('keydown', handleDurationKeyPress);
+            }
+            // Armazenar listeners para limpeza posterior
+            element.setAttribute('data-key-listeners', 'true');
+        }
+    }
+    handleSaveBlocoInline(id) {
+        const element = document.getElementById(`bloco-${id}`);
+        if (!element)
+            return;
+        const titleInput = element.querySelector('.bloco-title-input');
+        const durationInput = element.querySelector('.bloco-duration-input');
+        if (!titleInput || !durationInput)
+            return;
+        const newTitle = titleInput.value.trim();
+        const newDuration = parseInt(durationInput.value);
+        // Validações
+        if (!newTitle) {
+            alert('O nome do bloco não pode estar vazio.');
+            return;
+        }
+        if (isNaN(newDuration) || newDuration <= 0) {
+            alert('A duração deve ser um número maior que zero.');
+            return;
+        }
+        // Atualizar o bloco
+        this.blocoManager.updateBloco(id, newTitle, newDuration);
+        // Voltar para modo de visualização
+        this.exitEditMode(element);
+        // Re-renderizar para atualizar a interface
+        this.render();
+    }
+    handleCancelEditInline(id) {
+        const element = document.getElementById(`bloco-${id}`);
+        if (!element)
+            return;
+        // Restaurar valores originais
+        const originalTitle = element.getAttribute('data-original-title') || '';
+        const originalDuration = element.getAttribute('data-original-duration') || '';
+        const titleInput = element.querySelector('.bloco-title-input');
+        const durationInput = element.querySelector('.bloco-duration-input');
+        if (titleInput && durationInput) {
+            titleInput.value = originalTitle;
+            durationInput.value = originalDuration;
+        }
+        // Voltar para modo de visualização
+        this.exitEditMode(element);
+    }
+    exitEditMode(element) {
+        const viewMode = element.querySelector('.bloco-view-mode');
+        const editMode = element.querySelector('.bloco-edit-mode');
+        const viewButtons = element.querySelector('.bloco-view-buttons');
+        const editButtons = element.querySelector('.bloco-edit-buttons');
+        if (viewMode && editMode && viewButtons && editButtons) {
+            viewMode.classList.remove('hidden');
+            editMode.classList.add('hidden');
+            viewButtons.classList.remove('hidden');
+            editButtons.classList.add('hidden');
+        }
+        // Limpar listeners de teclado se existirem
+        if (element.getAttribute('data-key-listeners') === 'true') {
+            element.removeAttribute('data-key-listeners');
+        }
+    }
+    handleToggleDoneBloco(id) {
+        this.blocoManager.toggleBlocoDone(id);
+        this.render();
     }
     handleDeleteBloco(id) {
         if (confirm('Tem certeza que deseja excluir este bloco?')) {
@@ -236,6 +415,8 @@ export class BlocoRenderer {
         const blocosPanel = document.getElementById('blocosPanel');
         const toggleBlocosOverview = document.getElementById('toggleBlocosOverview');
         if (hasBlocks && blocosPanel) {
+            // Verificar se o painel já está visível e configurado
+            const isAlreadyVisible = this.isPanelStable();
             if (this.isInitialLoad && this.hasInitialBlocks) {
                 // Na carga inicial com blocos, apenas mantém o estado
                 blocosPanel.classList.remove('hidden', 'opacity-0');
@@ -255,12 +436,18 @@ export class BlocoRenderer {
                     }
                 });
             }
-            else {
-                // Para outras situações, apenas atualiza sem animação
+            else if (!isAlreadyVisible) {
+                // Só anima se não estiver já visível
                 blocosPanel.classList.remove('hidden', 'opacity-0');
                 blocosPanel.style.width = '350px';
                 blocosPanel.style.marginLeft = '32px';
             }
+            else {
+                // Painel já está estável, não faz nada - evita a piscada
+                console.log('Painel de blocos já está estável, pulando animação');
+            }
+            // Mostrar mensagem especial se todos os blocos estiverem concluídos
+            this.showAllDoneMessage(blocos);
         }
         else if (blocosPanel) {
             blocosPanel.classList.add('opacity-0');
@@ -276,6 +463,46 @@ export class BlocoRenderer {
         }
         // Marca que não é mais a carga inicial após a primeira atualização
         this.isInitialLoad = false;
+    }
+    showAllDoneMessage(blocos) {
+        const allDone = blocos.length > 0 && blocos.every(b => b.isDone);
+        const blocosList = document.getElementById('blocoList');
+        if (allDone && blocosList) {
+            // Adicionar mensagem de parabéns no final da lista
+            const congratsElement = blocosList.querySelector('.all-done-message');
+            if (!congratsElement) {
+                const congratsDiv = document.createElement('div');
+                congratsDiv.className = 'all-done-message p-4 text-center bg-green-50 dark:bg-green-900/30 rounded-lg border-2 border-green-200 dark:border-green-700';
+                congratsDiv.innerHTML = `
+                    <div class="text-green-700 dark:text-green-300 font-medium text-lg mb-2">🎉 Parabéns!</div>
+                    <div class="text-green-600 dark:text-green-400 text-sm">Todos os blocos foram concluídos com sucesso!</div>
+                `;
+                blocosList.appendChild(congratsDiv);
+            }
+        }
+        else if (blocosList) {
+            // Remover mensagem de parabéns se não estiver mais tudo concluído
+            const congratsElement = blocosList.querySelector('.all-done-message');
+            if (congratsElement) {
+                congratsElement.remove();
+            }
+        }
+    }
+    exitAllEditModes() {
+        // Sair de todos os modos de edição ativos
+        const editingElements = document.querySelectorAll('.bloco-item[data-key-listeners="true"]');
+        editingElements.forEach(element => {
+            this.exitEditMode(element);
+        });
+    }
+    isPanelStable() {
+        const blocosPanel = document.getElementById('blocosPanel');
+        if (!blocosPanel)
+            return false;
+        return !blocosPanel.classList.contains('hidden') &&
+            !blocosPanel.classList.contains('opacity-0') &&
+            blocosPanel.style.width === '350px' &&
+            blocosPanel.style.marginLeft === '32px';
     }
 }
 //# sourceMappingURL=BlocoRenderer.js.map

@@ -102,6 +102,15 @@
                             </div>
                         </div>
 
+                        <!-- Campo de nome do bloco -->
+                        <div class="mb-4">
+                            <div class="relative">
+                                <i data-lucide="edit-3" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="blocoNameInput" placeholder="Nome do bloco (opcional)" 
+                                       class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base p-2.5 pl-10">
+                            </div>
+                        </div>
+
                         <!-- Template e Botão Adicionar -->
                         <div class="flex gap-4 mb-6">
                             <div class="flex-1 relative">
@@ -117,7 +126,7 @@
                         </div>
 
                         <!-- Botões predefinidos -->
-                        <div class="flex flex-wrap gap-2 mb-6">
+                        <div class="time-buttons-container flex flex-wrap gap-2 mb-6">
                             <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="120">
                                 <i data-lucide="timer" class="w-3.5 h-3.5"></i>
                                 2 min
@@ -173,9 +182,12 @@
 
                         <!-- Sumário dos blocos -->
                         <div id="blocosSummary" class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-base">
-                            <div class="flex justify-between items-center">
+                            <div class="flex justify-between items-center mb-2">
                                 <span class="text-gray-600 dark:text-gray-300">Total: <span id="tempoTotal" class="font-medium text-gray-800 dark:text-white">--:--:--</span></span>
                                 <span class="text-gray-600 dark:text-gray-300">Término: <span id="horarioTermino" class="font-medium text-gray-800 dark:text-white">--:--</span></span>
+                            </div>
+                            <div class="text-center">
+                                <span class="blocos-progress text-sm text-gray-600 dark:text-gray-400">0/0 blocos concluídos</span>
                             </div>
                         </div>
 
@@ -265,20 +277,50 @@
 
     <!-- Template para blocos -->
     <template id="blocoTemplate" type="text/template">
-        <li id="bloco-${id}" class="bg-gray-50 dark:bg-gray-700/50 rounded p-2 flex items-center justify-between ${activeClass} hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors group">
-            <div class="min-w-0 flex-1">
+        <li id="bloco-${id}" class="bloco-item bg-gray-50 dark:bg-gray-700/50 rounded p-2 flex items-center justify-between ${activeClass} ${doneClass} hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors group" data-bloco-id="${id}">
+            <!-- Modo Visualização -->
+            <div class="bloco-view-mode min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
-                    <span class="text-sm font-medium text-gray-800 dark:text-white truncate">${title}</span>
-                    <span class="text-xs text-gray-400 dark:text-gray-500">${duration}min</span>
+                    <span class="bloco-title text-sm font-medium text-gray-800 dark:text-white truncate ${doneTextClass}">${title}</span>
+                    <span class="bloco-duration text-xs text-gray-400 dark:text-gray-500">${duration}min</span>
                 </div>
             </div>
+            
+            <!-- Modo Edição -->
+            <div class="bloco-edit-mode hidden min-w-0 flex-1">
+                <div class="flex flex-col gap-2">
+                    <input type="text" class="bloco-title-input w-full text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1 text-gray-800 dark:text-white" value="${title}" placeholder="Nome do bloco">
+                    <div class="flex gap-2">
+                        <input type="number" class="bloco-duration-input w-20 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1 text-gray-800 dark:text-white" value="${duration}" min="1" placeholder="Min">
+                        <span class="text-xs text-gray-400 dark:text-gray-500 self-center">minutos</span>
+                    </div>
+                </div>
+            </div>
+            
             <div class="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="edit-bloco p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded hover:bg-gray-200/50 dark:hover:bg-gray-500/30">
-                    <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                <button class="toggle-done-bloco p-1.5 ${doneButtonClass} rounded hover:bg-gray-200/50 dark:hover:bg-gray-500/30" title="${doneButtonTitle}">
+                    <i data-lucide="${doneIcon}" class="w-3.5 h-3.5"></i>
                 </button>
-                <button class="delete-bloco p-1.5 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/30">
-                    <i data-lucide="trash" class="w-3.5 h-3.5"></i>
-                </button>
+                
+                <!-- Botões de Edição -->
+                <div class="bloco-view-buttons flex gap-1">
+                    <button class="edit-bloco p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded hover:bg-gray-200/50 dark:hover:bg-gray-500/30" title="Editar bloco">
+                        <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button class="delete-bloco p-1.5 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/30" title="Excluir bloco">
+                        <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                
+                <!-- Botões de Confirmação -->
+                <div class="bloco-edit-buttons hidden flex gap-1">
+                    <button class="save-bloco p-1.5 text-green-400 hover:text-green-600 dark:text-green-500 dark:hover:text-green-400 rounded hover:bg-green-50 dark:hover:bg-green-900/30" title="Salvar alterações">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button class="cancel-edit p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded hover:bg-gray-200/50 dark:hover:bg-gray-500/30" title="Cancelar edição">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
             </div>
         </li>
     </template>

@@ -26,18 +26,9 @@ export class UIManager {
         console.log('Limpando recursos do UIManager...');
         // Remove todos os event listeners
         this.boundEventListeners.forEach((listener, elementId) => {
-            if (elementId.startsWith('predefined-time-')) {
-                // Para botões pré-configurados, encontrar o botão pelo data-time
-                const timeValue = elementId.replace('predefined-time-', '');
-                const button = document.querySelector(`[data-time="${timeValue}"]`);
-                if (button) {
-                    button.removeEventListener('click', listener);
-                }
-            } else {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.removeEventListener('click', listener);
-                }
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.removeEventListener('click', listener);
             }
         });
         this.boundEventListeners.clear();
@@ -63,7 +54,7 @@ export class UIManager {
         // Timer controls
         this.addEventListenerWithCleanup('startButton', 'click', () => {
             console.log('Botão start clicado');
-            this.timerController.restartFromBeginning();
+            this.handleStartTimer();
         });
         this.addEventListenerWithCleanup('toggleBlocosOverview', 'click', () => {
             console.log('Toggle da lista de blocos clicado');
@@ -79,43 +70,8 @@ export class UIManager {
                 blocosOverview.classList.add('translate-x-full');
             }
         });
-        // Botões predefinidos de tempo - implementação direta nos botões
-        console.log('Configurando botões pré-configurados...');
-        
-        // Usar setTimeout para garantir que os elementos estejam disponíveis
-        setTimeout(() => {
-            const predefinedTimeButtons = document.querySelectorAll('.predefined-time');
-            console.log('Botões pré-configurados encontrados:', predefinedTimeButtons.length);
-            
-            predefinedTimeButtons.forEach((button, index) => {
-                console.log(`Configurando botão ${index + 1}:`, button.textContent, 'data-time:', button.dataset.time);
-                const timeButtonHandler = (e) => {
-                    const target = e.target;
-                    if (target.classList.contains('predefined-time')) {
-                        const timeInSeconds = parseInt(target.dataset.time || '0');
-                        console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
-                        if (timeInSeconds > 0) {
-                            const hours = Math.floor(timeInSeconds / 3600);
-                            const minutes = Math.floor((timeInSeconds % 3600) / 60);
-                            const seconds = timeInSeconds % 60;
-                            const inputs = this.getTimeInputs();
-                            if (inputs) {
-                                inputs.hours.value = hours.toString();
-                                inputs.minutes.value = minutes.toString();
-                                inputs.seconds.value = seconds.toString();
-                                console.log('Tempo configurado:', { hours, minutes, seconds });
-                            } else {
-                                console.error('Inputs não encontrados');
-                            }
-                        }
-                    }
-                };
-                button.addEventListener('click', timeButtonHandler);
-                // Armazenar o listener para limpeza posterior
-                this.boundEventListeners.set(`predefined-time-${button.dataset.time}`, timeButtonHandler);
-            });
-            console.log('Botões pré-configurados configurados com sucesso');
-        }, 200);
+        // Botões predefinidos de tempo - usando delegação de eventos
+        this.setupTimeButtons();
         // Outros botões de controle
         this.addEventListenerWithCleanup('stopButton', 'click', () => {
             console.log('Botão stop clicado');
@@ -179,11 +135,23 @@ export class UIManager {
         // Converter para minutos com precisão de 2 casas decimais
         const totalMinutes = totalSeconds / 60;
         console.log('Total de minutos:', totalMinutes);
-        const title = this.createBlocoTitle(hours, minutes, seconds);
+        // Obter o nome personalizado do bloco, se fornecido
+        const blocoNameInput = document.getElementById('blocoNameInput');
+        let title;
+        if (blocoNameInput && blocoNameInput.value.trim()) {
+            // Usar o nome personalizado fornecido pelo usuário
+            title = blocoNameInput.value.trim();
+            // Limpar o campo de nome após usar
+            blocoNameInput.value = '';
+        }
+        else {
+            // Usar o título gerado automaticamente baseado no tempo
+            title = this.createBlocoTitle(hours, minutes, seconds);
+        }
         console.log('Título do bloco:', title);
         this.blocoManager.addBloco(title, totalMinutes);
         this.blocoRenderer.render();
-        // Não limpar os campos para permitir reutilizar o mesmo tempo
+        // NÃO limpar os inputs de tempo - manter os valores para próximos blocos
         // this.clearTimeInputs(inputs);
     }
     validateTimerMode() {
@@ -209,6 +177,7 @@ export class UIManager {
             console.error('Elementos de input não encontrados');
             return null;
         }
+        console.log('Todos os inputs de tempo encontrados com sucesso');
         return { hours: hoursInput, minutes: minutesInput, seconds: secondsInput };
     }
     parseTimeInputs(inputs) {
@@ -240,16 +209,13 @@ export class UIManager {
         console.log('Resetando blocos...');
         this.blocoManager.resetBlocos();
         this.blocoRenderer.render();
-        // Não limpar os inputs de tempo para manter os valores configurados
-        // const hoursInput = document.getElementById('hours');
-        // const minutesInput = document.getElementById('minutes');
-        // const secondsInput = document.getElementById('seconds');
-        // if (hoursInput)
-        //     hoursInput.value = '0';
-        // if (minutesInput)
-        //     minutesInput.value = '0';
-        // if (secondsInput)
-        //     secondsInput.value = '0';
+        // NÃO limpar os inputs de tempo - manter os valores para próximos blocos
+        // const hoursInput = document.getElementById('hours') as HTMLInputElement;
+        // const minutesInput = document.getElementById('minutes') as HTMLInputElement;
+        // const secondsInput = document.getElementById('seconds') as HTMLInputElement;
+        // if (hoursInput) hoursInput.value = '0';
+        // if (minutesInput) minutesInput.value = '0';
+        // if (secondsInput) secondsInput.value = '0';
         console.log('Blocos resetados com sucesso');
     }
     handlePrevBloco() {
@@ -259,8 +225,11 @@ export class UIManager {
         const currentIndex = blocos.findIndex(b => b.isActive);
         if (currentIndex === -1)
             return;
-        const prevIndex = (currentIndex - 1 + blocos.length) % blocos.length;
-        this.updateActiveBloco(currentIndex, prevIndex);
+        // Encontrar o bloco anterior não concluído
+        const prevIndex = this.blocoManager.findPrevUnfinishedBlocoIndex(currentIndex);
+        if (prevIndex !== -1) {
+            this.updateActiveBloco(currentIndex, prevIndex);
+        }
     }
     handleNextBloco() {
         console.log('Iniciando navegação para próximo bloco...');
@@ -275,19 +244,52 @@ export class UIManager {
             console.log('Nenhum bloco ativo encontrado');
             return;
         }
-        const nextIndex = (currentIndex + 1) % blocos.length;
-        console.log('Próximo índice:', nextIndex);
-        this.updateActiveBloco(currentIndex, nextIndex);
+        // Encontrar o próximo bloco não concluído
+        const nextIndex = this.blocoManager.findNextUnfinishedBlocoIndex(currentIndex);
+        if (nextIndex !== -1) {
+            console.log('Próximo índice não concluído:', nextIndex);
+            this.updateActiveBloco(currentIndex, nextIndex);
+        }
+        else {
+            console.log('Todos os blocos restantes estão concluídos');
+        }
+    }
+    handleStartTimer() {
+        console.log('Iniciando timer...');
+        // Encontrar o primeiro bloco não concluído
+        const firstUnfinishedIndex = this.blocoManager.findFirstUnfinishedBlocoIndex();
+        if (firstUnfinishedIndex === -1) {
+            alert('Todos os blocos já foram concluídos!');
+            return;
+        }
+        // Definir o primeiro bloco não concluído como ativo
+        this.blocoManager.setCurrentBlocoIndex(firstUnfinishedIndex);
+        // Atualizar apenas o bloco ativo para evitar re-renderização completa
+        this.blocoRenderer.renderActiveBlocoOnly();
+        // Iniciar o timer
+        this.timerController.restartFromBeginning();
     }
     updateActiveBloco(currentIndex, newIndex) {
         console.log('Atualizando bloco ativo de', currentIndex, 'para', newIndex);
         const blocos = this.blocoManager.getBlocos();
+        // Verificar se o novo bloco não está concluído
+        if (newIndex >= 0 && newIndex < blocos.length && blocos[newIndex].isDone) {
+            console.log('Tentativa de ativar bloco concluído, procurando próximo não concluído...');
+            const nextUnfinishedIndex = this.blocoManager.findNextUnfinishedBlocoIndex(newIndex - 1);
+            if (nextUnfinishedIndex !== -1) {
+                newIndex = nextUnfinishedIndex;
+            }
+            else {
+                console.log('Nenhum bloco não concluído encontrado');
+                return;
+            }
+        }
         // Parar o timer atual
         this.timerController.stop();
         // Atualizar o estado no BlocoManager
         this.blocoManager.setCurrentBlocoIndex(newIndex);
-        // Atualizar a interface
-        this.blocoRenderer.render();
+        // Atualizar apenas o bloco ativo para evitar re-renderização completa
+        this.blocoRenderer.renderActiveBlocoOnly();
         // Iniciar o timer com o novo bloco
         this.timerController.start();
         // Esconder o botão verde se estiver visível
@@ -295,6 +297,46 @@ export class UIManager {
         if (nextBlocoButtonGreen) {
             nextBlocoButtonGreen.classList.add('hidden');
         }
+    }
+    setupTimeButtons() {
+        console.log('Configurando botões de tempo predefinidos...');
+        // Aguardar um frame para garantir que o DOM esteja pronto
+        requestAnimationFrame(() => {
+            const timeButtonsContainer = document.querySelector('.time-buttons-container');
+            console.log('Container dos botões de tempo encontrado:', timeButtonsContainer);
+            if (timeButtonsContainer) {
+                const timeButtonHandler = (e) => {
+                    const target = e.target;
+                    console.log('Clique detectado em:', target);
+                    if (target.classList.contains('predefined-time')) {
+                        const timeInSeconds = parseInt(target.dataset.time || '0');
+                        console.log('Botão predefinido clicado:', timeInSeconds, 'segundos');
+                        if (timeInSeconds > 0) {
+                            const hours = Math.floor(timeInSeconds / 3600);
+                            const minutes = Math.floor((timeInSeconds % 3600) / 60);
+                            const seconds = timeInSeconds % 60;
+                            console.log('Tempo convertido:', { hours, minutes, seconds });
+                            const inputs = this.getTimeInputs();
+                            if (inputs) {
+                                inputs.hours.value = hours.toString();
+                                inputs.minutes.value = minutes.toString();
+                                inputs.seconds.value = seconds.toString();
+                                console.log('Inputs atualizados com sucesso');
+                            }
+                            else {
+                                console.error('Inputs de tempo não encontrados');
+                            }
+                        }
+                    }
+                };
+                timeButtonsContainer.addEventListener('click', timeButtonHandler);
+                this.boundEventListeners.set('timeButtonsContainer', timeButtonHandler);
+                console.log('Event listener dos botões de tempo configurado com sucesso');
+            }
+            else {
+                console.error('Container dos botões de tempo não encontrado!');
+            }
+        });
     }
 }
 //# sourceMappingURL=UIManager.js.map
