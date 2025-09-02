@@ -54,5 +54,11 @@ export const reunioesPredefinidas: ReunioesPredefinidas = {
         { name: 'O que pode melhorar?', duration: 15 },
         { name: 'Ações para próximo Sprint', duration: 15 },
         { name: 'Fechamento', duration: 10 }
+    ],
+    'reuniao-escrita': [
+        { name: 'Reunião Escrita', duration: 20 },
+        { name: 'Leitura Escrita', duration: 10 },
+        { name: 'Conversa Equipe', duration: 15 },
+        { name: 'Fechamento Reunião', duration: 5 }
     ]
 }; 
