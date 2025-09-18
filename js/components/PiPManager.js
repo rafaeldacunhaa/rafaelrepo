@@ -302,8 +302,20 @@ export class PiPManager {
             }
 
             body.timer-ended {
-                background: rgba(239, 68, 68, 0.98) !important;
+                background: #dc2626 !important; /* vermelho base mais escuro */
                 color: white !important;
+                transition: none !important; /* sem suavização */
+            }
+
+            /* Overlay para piscar o fundo de forma brusca */
+            body.timer-ended::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                background: #ef4444; /* vermelho mais claro para contraste */
+                pointer-events: none;
+                z-index: 1;
+                animation: pip-flash-hard 0.7s steps(2, start) infinite;
             }
 
             @media (prefers-color-scheme: dark) {
@@ -357,6 +369,13 @@ export class PiPManager {
                 font-weight: 500;
                 opacity: 0.8;
                 line-height: 1;
+            }
+
+            .end-indicator {
+                font-size: 12px;
+                line-height: 1;
+                animation: end-icon-blink 0.9s ease-in-out infinite alternate;
+                filter: drop-shadow(0 0 2px rgba(0,0,0,0.25));
             }
 
             .time {
@@ -450,6 +469,26 @@ export class PiPManager {
                 50% { opacity: 0.7; }
                 100% { opacity: 1; }
             }
+
+            /* Piscar usando brilho para não conflitar com background !important */
+            /* Piscar brusco do overlay: alterna ligado/desligado */
+            @keyframes pip-flash-hard {
+                0% { opacity: 0; }
+                50% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+
+            @keyframes end-icon-blink {
+                0% { opacity: 0.55; transform: scale(0.95); }
+                100% { opacity: 1; transform: scale(1.05); }
+            }
+
+            /* Respeitar usuários com redução de movimento */
+            @media (prefers-reduced-motion: reduce) {
+                body.timer-ended::before {
+                    animation: none;
+                }
+            }
         `;
         this.pipWindow.document.head.appendChild(style);
     }
@@ -475,7 +514,7 @@ export class PiPManager {
         let html = `
             <div class="main-row">
                 <div class="left-section">
-                    <div class="status">${this.getStatusText(info.status)}</div>
+                    <div class="status">${this.getStatusText(info.status)} ${info.remaining <= 0 ? '<span class="end-indicator" title="Tempo esgotado">⏰</span>' : ''}</div>
                     <div class="${timeClasses.join(' ')}">${info.timeDisplay}</div>
                 </div>
                 <div class="right-section">

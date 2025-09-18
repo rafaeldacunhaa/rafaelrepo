@@ -17,9 +17,14 @@ export class TimerController {
     restartFromBeginning() {
         const blocos = this.blocoManager.getBlocos();
         if (blocos.length > 0) {
-            // Sempre começa do primeiro bloco quando reinicia
-            this.blocoManager.setCurrentBlocoIndex(0);
-            this.startWithCurrentBlock();
+            const firstUnfinishedIndex = this.blocoManager.findFirstUnfinishedBlocoIndex();
+            if (firstUnfinishedIndex !== -1) {
+                this.blocoManager.setCurrentBlocoIndex(firstUnfinishedIndex);
+                this.startWithCurrentBlock();
+                return;
+            }
+            // Todos concluídos: iniciar via tempo manual (com possível autocriação de bloco)
+            this.startWithManualTime();
             return;
         }
         this.startWithManualTime();
@@ -71,6 +76,8 @@ export class TimerController {
             alert('Por favor, selecione um horário futuro.');
             return;
         }
+        // Autocriar bloco se não houver nenhum não concluído
+        this.maybeCreateBlockFromMilliseconds(milliseconds);
         this.timer.start(milliseconds);
     }
     startWithDuration() {
@@ -88,7 +95,22 @@ export class TimerController {
             alert('Por favor, insira um tempo válido.');
             return;
         }
+        // Autocriar bloco se não houver nenhum não concluído
+        this.maybeCreateBlockFromMilliseconds(totalMilliseconds);
         this.timer.start(totalMilliseconds);
+    }
+    maybeCreateBlockFromMilliseconds(milliseconds) {
+        if (milliseconds <= 0)
+            return;
+        const firstUnfinishedIndex = this.blocoManager.findFirstUnfinishedBlocoIndex();
+        const hasUnfinished = firstUnfinishedIndex !== -1;
+        // Se não houver blocos não concluídos, criar um bloco automático sem nome
+        if (!hasUnfinished) {
+            const minutes = milliseconds / 60000;
+            this.blocoManager.addBloco('', minutes);
+            const newIndex = this.blocoManager.getBlocos().length - 1;
+            this.blocoManager.setCurrentBlocoIndex(newIndex);
+        }
     }
     validateInputs(inputs) {
         if (inputs.some(input => !input)) {

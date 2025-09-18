@@ -318,23 +318,22 @@ export class UIManager {
 
     private handleStartTimer(): void {
         console.log('Iniciando timer...');
-        
         // Encontrar o primeiro bloco não concluído
         const firstUnfinishedIndex = this.blocoManager.findFirstUnfinishedBlocoIndex();
-        
-        if (firstUnfinishedIndex === -1) {
-            alert('Todos os blocos já foram concluídos!');
+
+        if (firstUnfinishedIndex !== -1) {
+            // Definir o primeiro bloco não concluído como ativo
+            this.blocoManager.setCurrentBlocoIndex(firstUnfinishedIndex);
+            // Atualizar apenas o bloco ativo para evitar re-renderização completa
+            this.blocoRenderer.renderActiveBlocoOnly();
+            // Iniciar o timer
+            this.timerController.restartFromBeginning();
             return;
         }
-        
-        // Definir o primeiro bloco não concluído como ativo
-        this.blocoManager.setCurrentBlocoIndex(firstUnfinishedIndex);
-        
-        // Atualizar apenas o bloco ativo para evitar re-renderização completa
-        this.blocoRenderer.renderActiveBlocoOnly();
-        
-        // Iniciar o timer
-        this.timerController.restartFromBeginning();
+
+        // Sem blocos não concluídos: delegar para o TimerController iniciar via tempo manual,
+        // que poderá autocriar um bloco e iniciar
+        this.timerController.start();
     }
 
     private updateActiveBloco(currentIndex: number, newIndex: number): void {
