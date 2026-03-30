@@ -27,215 +27,246 @@
         }
     </script>
 </head>
-<body class="h-full bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+<body class="app-shell h-full transition-colors duration-300 text-gray-900 dark:text-gray-100">
     <!-- Header com relógio e controles -->
-    <header class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md px-6 py-4 z-50">
-        <div class="flex justify-between items-center">
+    <header class="app-header fixed top-0 left-0 right-0 px-6 py-3.5 z-50">
+        <div class="flex justify-between items-center max-w-[1600px] mx-auto">
             <div class="flex items-center gap-6">
                 <img src="https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png" 
                      alt="Climba Logo" 
-                     class="h-8 object-contain">
-                <div id="currentTime" class="text-4xl font-bold text-indigo-600 dark:text-indigo-400"></div>
+                     class="h-7 object-contain opacity-90 dark:opacity-95">
+                <div id="currentTime" class="text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight text-[#151634] dark:text-[#c8f31a]"></div>
             </div>
-            <h1 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 absolute left-1/2 -translate-x-1/2">
-                CronnaClimba v2
+            <h1 class="app-title text-xl sm:text-2xl font-semibold text-[#151634] dark:text-white absolute left-1/2 -translate-x-1/2 max-w-[40vw] truncate text-center">
+                CronnaClimba <span class="text-[#252a55] dark:text-[#c8f31a] font-medium text-base sm:text-lg align-middle">v2</span>
             </h1>
-            <div class="flex gap-4 items-center">
-                <button id="toggleBlocosOverview" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 hidden">
-                    <i data-lucide="panel-left" class="w-6 h-6"></i>
+            <div class="flex gap-1 sm:gap-2 items-center">
+                <button id="toggleBlocosOverview" type="button" class="p-2.5 min-w-[44px] min-h-[44px] rounded-xl hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors hidden" aria-label="Mostrar ou ocultar painel de blocos">
+                    <i data-lucide="panel-left" class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true"></i>
                 </button>
-                <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <i data-lucide="moon" class="w-6 h-6"></i>
+                <button id="themeToggle" type="button" class="p-2.5 min-w-[44px] min-h-[44px] rounded-xl hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors" aria-label="Alternar tema claro ou escuro">
+                    <i data-lucide="moon" class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true"></i>
                 </button>
-                <button id="fullscreenButton" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <i data-lucide="maximize" class="w-6 h-6"></i>
+                <button id="fullscreenButton" type="button" class="p-2.5 min-w-[44px] min-h-[44px] rounded-xl hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors" aria-label="Entrar ou sair da tela cheia">
+                    <i data-lucide="maximize" class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto px-4 pt-24 pb-8">
+    <main class="container mx-auto px-4 pt-24 pb-28 min-h-0">
         <!-- Frase motivacional -->
-        <div id="motivationalPhrase" class="text-center mb-8">
-            <p class="text-gray-600 dark:text-gray-400 italic text-lg"></p>
+        <div id="motivationalPhrase" class="text-center mb-10">
+            <p class="motivational-line mx-auto text-center"></p>
         </div>
 
         <div class="flex justify-center" id="painelContainer">
             <!-- Painel Único Expansível -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 transition-all duration-500 ease-in-out flex" id="timerPanel">
+            <div class="app-panel p-5 sm:p-6 md:p-8 transition-all duration-500 ease-in-out flex flex-col lg:flex-row items-stretch gap-6 lg:gap-8" id="timerPanel">
                 <!-- Container Flex para Timer e Blocos -->
-                <div class="flex-shrink-0" style="width: 512px;">
-                    <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
-                        <i data-lucide="timer" class="w-6 h-6"></i>
-                        Configurar Timer
-                    </h2>
-                    
-                    <!-- Tabs para escolher modo -->
-                    <div class="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                        <button class="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-800 shadow text-sm font-medium flex items-center justify-center gap-2" id="timerManualTab">
-                            <i data-lucide="clock" class="w-4 h-4"></i>
-                            Timer Manual
-                        </button>
-                        <button class="flex-1 py-2 px-4 text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2" id="horarioFinalTab">
-                            <i data-lucide="alarm-clock" class="w-4 h-4"></i>
-                            Horário Final
-                        </button>
+                <div class="flex-shrink-0 w-full max-w-2xl min-w-0">
+                    <div class="bento-config grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
+                        <h2 class="app-title md:col-span-12 text-xl sm:text-2xl font-semibold text-[#151634] dark:text-white flex items-center gap-2.5">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#151634]/12 dark:bg-[#c8f31a]/10 text-[#151634] dark:text-[#c8f31a]" aria-hidden="true">
+                                <i data-lucide="timer" class="w-5 h-5"></i>
+                            </span>
+                            Configurar Timer
+                        </h2>
+
+                        <!-- Tabs — linha inteira -->
+                        <div class="bento-card bento-card--flush md:col-span-12 p-1">
+                            <div class="timer-mode-tabs flex rounded-xl p-1" role="tablist" aria-label="Modo do timer">
+                                <button type="button" role="tab" id="timerManualTab" aria-selected="true" aria-controls="timerManualMode" class="flex-1 min-h-[44px] py-2.5 px-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200">
+                                    <i data-lucide="clock" class="w-4 h-4 shrink-0" aria-hidden="true"></i>
+                                    Timer Manual
+                                </button>
+                                <button type="button" role="tab" id="horarioFinalTab" aria-selected="false" aria-controls="horarioFinalMode" tabindex="-1" class="flex-1 min-h-[44px] py-2.5 px-4 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center justify-center gap-2 transition-all duration-200 hover:text-gray-900 dark:hover:text-gray-200">
+                                    <i data-lucide="alarm-clock" class="w-4 h-4 shrink-0" aria-hidden="true"></i>
+                                    Horário Final
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Modo manual — grade bento -->
+                        <div id="timerManualMode" class="md:col-span-12 grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4" role="tabpanel" aria-labelledby="timerManualTab">
+                            <div class="bento-card md:col-span-7 lg:col-span-8">
+                                <p class="bento-card-label">Duração</p>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="flex flex-col gap-1.5">
+                                        <label for="hours" class="text-sm font-medium text-gray-600 dark:text-gray-400">Horas</label>
+                                        <input type="number" id="hours" name="hours" min="0" value="0" inputmode="numeric"
+                                               class="w-full min-h-[44px] text-2xl sm:text-3xl text-center bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/80 rounded-xl p-3 font-semibold tabular-nums">
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label for="minutes" class="text-sm font-medium text-gray-600 dark:text-gray-400">Minutos</label>
+                                        <input type="number" id="minutes" name="minutes" min="0" value="0" inputmode="numeric"
+                                               class="w-full min-h-[44px] text-2xl sm:text-3xl text-center bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/80 rounded-xl p-3 font-semibold tabular-nums">
+                                    </div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <label for="seconds" class="text-sm font-medium text-gray-600 dark:text-gray-400">Segundos</label>
+                                        <input type="number" id="seconds" name="seconds" min="0" value="0" inputmode="numeric"
+                                               class="w-full min-h-[44px] text-2xl sm:text-3xl text-center bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/80 rounded-xl p-3 font-semibold tabular-nums">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bento-card md:col-span-5 lg:col-span-4 flex flex-col min-h-0">
+                                <p class="bento-card-label">Atalhos</p>
+                                <div class="time-buttons-container flex flex-wrap gap-1.5 flex-1 content-start" role="group" aria-label="Durações rápidas">
+                                    <button type="button" class="predefined-time flex items-center transition-all" data-time="120">
+                                        <i data-lucide="timer" class="w-3 h-3 shrink-0" aria-hidden="true"></i>
+                                        2 min
+                                    </button>
+                                    <button type="button" class="predefined-time flex items-center transition-all" data-time="480">
+                                        <i data-lucide="timer" class="w-3 h-3 shrink-0" aria-hidden="true"></i>
+                                        8 min
+                                    </button>
+                                    <button type="button" class="predefined-time flex items-center transition-all" data-time="900">
+                                        <i data-lucide="timer" class="w-3 h-3 shrink-0" aria-hidden="true"></i>
+                                        15 min
+                                    </button>
+                                    <button type="button" class="predefined-time flex items-center transition-all" data-time="1800">
+                                        <i data-lucide="timer" class="w-3 h-3 shrink-0" aria-hidden="true"></i>
+                                        30 min
+                                    </button>
+                                    <button type="button" class="predefined-time flex items-center transition-all" data-time="3600">
+                                        <i data-lucide="timer" class="w-3 h-3 shrink-0" aria-hidden="true"></i>
+                                        1 h
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bento-card md:col-span-12">
+                                <p class="bento-card-label">Bloco &amp; template</p>
+                                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                    <div class="flex-1 min-w-0">
+                                        <label for="blocoNameInput" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1.5">Nome do bloco <span class="font-normal text-gray-500">(opcional)</span></label>
+                                        <div class="relative">
+                                            <i data-lucide="edit-3" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" aria-hidden="true"></i>
+                                            <input type="text" id="blocoNameInput" name="blocoName" placeholder="Ex.: Daily, Sprint planning" autocomplete="off"
+                                                   class="w-full min-h-[44px] bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/80 rounded-xl text-base p-2.5 pl-10">
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0 sm:max-w-xs">
+                                        <label for="reuniaoTemplate" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1.5">Template</label>
+                                        <div class="relative">
+                                            <i data-lucide="list-checks" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" aria-hidden="true"></i>
+                                            <select id="reuniaoTemplate" name="reuniaoTemplate" class="w-full min-h-[44px] bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/80 rounded-xl text-base p-2.5 pl-10">
+                                                <option value="" disabled selected>Escolha um template</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-end sm:pt-6">
+                                        <button type="button" id="addBlocoButton" class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl font-medium flex items-center justify-center gap-1.5 text-sm whitespace-nowrap transition-colors">
+                                            <i data-lucide="plus-circle" class="w-4 h-4" aria-hidden="true"></i>
+                                            Adicionar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="horarioFinalMode" class="hidden md:col-span-12" role="tabpanel" aria-labelledby="horarioFinalTab" aria-hidden="true">
+                            <div class="bento-card">
+                                <p class="bento-card-label">Encerrar em</p>
+                                <label for="endHour" class="sr-only">Horário final</label>
+                                <div class="relative">
+                                    <i data-lucide="alarm-clock" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" aria-hidden="true"></i>
+                                    <input type="time" id="endHour" name="endHour"
+                                           class="w-full min-h-[52px] text-2xl sm:text-3xl text-center pl-10 bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/80 rounded-xl p-3 font-semibold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bento-card bento-card--cta md:col-span-12 p-0 overflow-hidden">
+                            <button type="button" id="startButton" class="btn-start-main w-full py-4 text-white rounded-xl flex items-center justify-center gap-2 border-0">
+                                <i data-lucide="play" class="w-6 h-6 shrink-0" aria-hidden="true"></i>
+                                Iniciar
+                            </button>
+                        </div>
                     </div>
-
-                    <!-- Modos do Timer -->
-                    <div id="timerManualMode">
-                        <div class="grid grid-cols-3 gap-4 mb-6">
-                            <div class="text-center relative">
-                                <input type="number" id="hours" min="0" value="0" 
-                                       class="w-full text-3xl text-center pl-10 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                                <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horas</label>
-                            </div>
-                            <div class="text-center">
-                                <input type="number" id="minutes" min="0" value="0"
-                                       class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                                <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Minutos</label>
-                            </div>
-                            <div class="text-center">
-                                <input type="number" id="seconds" min="0" value="0"
-                                       class="w-full text-3xl text-center bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                                <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Segundos</label>
-                            </div>
-                        </div>
-
-                        <!-- Campo de nome do bloco -->
-                        <div class="mb-4">
-                            <div class="relative">
-                                <i data-lucide="edit-3" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="text" id="blocoNameInput" placeholder="Nome do bloco (opcional)" 
-                                       class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base p-2.5 pl-10">
-                            </div>
-                        </div>
-
-                        <!-- Template e Botão Adicionar -->
-                        <div class="flex gap-4 mb-6">
-                            <div class="flex-1 relative">
-                                <i data-lucide="list-checks" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <select id="reuniaoTemplate" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base p-2.5 pl-10">
-                                    <option value="" disabled selected>Templates</option>
-                                </select>
-                            </div>
-                            <button id="addBlocoButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-gray-800 dark:text-white font-medium flex items-center gap-1.5 text-sm whitespace-nowrap">
-                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                                Adicionar
-                            </button>
-                        </div>
-
-                        <!-- Botões predefinidos -->
-                        <div class="time-buttons-container flex flex-wrap gap-2 mb-6">
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="120">
-                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
-                                2 min
-                            </button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="480">
-                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
-                                8 min
-                            </button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="900">
-                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
-                                15 min
-                            </button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="1800">
-                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
-                                30 min
-                            </button>
-                            <button class="predefined-time px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5" data-time="3600">
-                                <i data-lucide="timer" class="w-3.5 h-3.5"></i>
-                                1 hora
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="horarioFinalMode" class="hidden">
-                        <div class="mb-6 relative">
-                            <i data-lucide="alarm-clock" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                            <input type="time" id="endHour" 
-                                   class="w-full text-3xl text-center pl-10 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                            <label class="text-sm text-gray-600 dark:text-gray-400 mt-1">Horário Final</label>
-                        </div>
-                    </div>
-
-                    <button id="startButton" class="w-full py-4 bg-[#151634] hover:bg-[#0d0e22] text-white rounded-lg text-lg font-medium transition-colors flex items-center justify-center gap-2">
-                        <i data-lucide="play" class="w-6 h-6"></i>
-                        Iniciar
-                    </button>
                 </div>
 
                 <!-- Lado dos Blocos -->
-                <div id="blocosPanel" class="flex-shrink-0 w-0 opacity-0 transition-all duration-500 ease-in-out overflow-hidden">
-                    <div class="w-[350px]">
-                        <!-- Cabeçalho com título e botões -->
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                                <i data-lucide="list-todo" class="w-5 h-5"></i>
-                                Blocos de Tempo
+                <div id="blocosPanel" class="blocos-panel flex-shrink-0 w-0 opacity-0 transition-all duration-500 ease-in-out overflow-hidden min-h-0 flex flex-col lg:self-stretch">
+                    <div class="bento-blocos w-full min-w-0 max-w-full flex flex-col flex-1 min-h-0 gap-3 md:gap-4">
+                        <div class="blocos-panel-header flex items-center justify-between gap-3 w-full min-w-0 px-0.5">
+                            <h2 class="app-title text-lg font-semibold text-[#151634] dark:text-white flex items-center gap-2 min-w-0 flex-1">
+                                <i data-lucide="list-todo" class="w-5 h-5 shrink-0 text-[#151634] dark:text-[#c8f31a]"></i>
+                                <span class="truncate">Blocos</span>
                             </h2>
-                            <button id="resetBlocosButton" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium flex items-center gap-1.5 text-base">
+                            <button type="button" id="resetBlocosButton" class="px-2.5 sm:px-3 py-2 rounded-xl font-medium flex items-center gap-1.5 text-sm transition-colors shrink-0">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                Limpar Lista
+                                <span class="hidden sm:inline">Limpar</span>
                             </button>
                         </div>
 
-                        <!-- Sumário dos blocos -->
-                        <div id="blocosSummary" class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-base">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-gray-600 dark:text-gray-300">Total: <span id="tempoTotal" class="font-medium text-gray-800 dark:text-white">--:--:--</span></span>
-                                <span class="text-gray-600 dark:text-gray-300">Término: <span id="horarioTermino" class="font-medium text-gray-800 dark:text-white">--:--</span></span>
+                        <div id="blocosSummary" class="grid grid-cols-2 gap-2 text-sm" role="region" aria-label="Resumo da fila">
+                            <div class="bento-card bento-stat p-3 text-center">
+                                <p class="bento-stat-label">Total</p>
+                                <p id="tempoTotal" class="font-semibold tabular-nums text-[#151634] dark:text-white text-base">--:--:--</p>
                             </div>
-                            <div class="text-center">
-                                <span class="blocos-progress text-sm text-gray-600 dark:text-gray-400">0/0 blocos concluídos</span>
+                            <div class="bento-card bento-stat p-3 text-center">
+                                <p class="bento-stat-label">Término</p>
+                                <p id="horarioTermino" class="font-semibold tabular-nums text-[#151634] dark:text-white text-base">--:--</p>
+                            </div>
+                            <div class="bento-card bento-stat p-3 text-center col-span-2">
+                                <p class="bento-stat-label">Progresso</p>
+                                <p class="blocos-progress text-gray-700 dark:text-gray-300">0/0 blocos concluídos</p>
                             </div>
                         </div>
 
-                        <!-- Lista de blocos -->
-                        <ul id="blocoList" class="space-y-2 max-h-[350px] overflow-y-auto"></ul>
+                        <ul id="blocoList" class="bloco-list flex-1 min-h-0 overflow-y-auto space-y-2 overscroll-contain"></ul>
+
+                        <button type="button" id="startBlocosQueueButton" class="btn-start-queue shrink-0">
+                            <i data-lucide="list-checks" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+                            Iniciar fila
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Timer em execução -->
-        <div id="timerRunning" class="fixed inset-0 bg-white dark:bg-gray-900 z-40 hidden pt-20 pb-20 transition-all duration-300">
+        <div id="timerRunning" class="timer-running-overlay fixed inset-0 z-40 hidden pt-20 pb-20 transition-all duration-300">
             <div class="h-full flex flex-col items-center justify-center transition-all duration-300" id="timerContainer">
-                <!-- Navegação de blocos -->
-                <div class="flex items-center gap-4 mb-8 w-full max-w-4xl">
-                    <button id="prevBlocoButton" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50">
-                        <i data-lucide="chevron-left"></i>
-                    </button>
-                    <div id="currentBlocoName" class="text-3xl text-[#151634] dark:text-[#151634] flex-grow text-center"></div>
-                    <button id="nextBlocoButton" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50">
-                        <i data-lucide="chevron-right"></i>
-                    </button>
-                    <button id="pipButton" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2" title="Abrir em janela flutuante">
-                        <i data-lucide="picture-in-picture-2" class="w-5 h-5"></i>
+                <!-- Navegação de blocos (só sessão iniciada por "Iniciar fila"); PiP permanece -->
+                <div id="timerRunningNavRow" class="flex items-center gap-4 mb-8 w-full max-w-4xl">
+                    <div id="timerQueueNav" class="flex items-center gap-4 flex-1 min-w-0">
+                        <button type="button" id="prevBlocoButton" class="p-3 min-w-[44px] min-h-[44px] rounded-full bg-gray-200/90 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 shrink-0 transition-colors" aria-label="Bloco anterior">
+                            <i data-lucide="chevron-left" class="mx-auto" aria-hidden="true"></i>
+                        </button>
+                        <div id="currentBlocoName" class="app-title text-2xl sm:text-3xl font-semibold text-[#151634] dark:text-white flex-1 text-center min-w-0 truncate px-2" role="status" aria-live="polite" aria-atomic="true"></div>
+                        <button type="button" id="nextBlocoButton" class="p-3 min-w-[44px] min-h-[44px] rounded-full bg-gray-200/90 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 shrink-0 transition-colors" aria-label="Próximo bloco">
+                            <i data-lucide="chevron-right" class="mx-auto" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <button type="button" id="pipButton" class="p-3 min-w-[44px] min-h-[44px] rounded-full bg-gray-200/90 dark:bg-gray-800 hover:bg-[#151634]/12 dark:hover:bg-[#c8f31a]/12 flex items-center justify-center gap-2 shrink-0 transition-colors" title="Abrir em janela flutuante" aria-label="Abrir timer em janela flutuante (picture-in-picture)">
+                        <i data-lucide="picture-in-picture-2" class="w-5 h-5" aria-hidden="true"></i>
                     </button>
                 </div>
                 
                 <!-- Timer display com tamanho responsivo -->
-                <div id="timeDisplay" class="text-[20vw] leading-none font-bold text-gray-800 dark:text-white mb-8"></div>
+                <div id="timeDisplay" class="time-display-hero text-[18vw] sm:text-[20vw] leading-none mb-8" aria-label="Tempo restante"></div>
                 
                 <!-- Barra de progresso -->
                 <div class="w-full max-w-4xl mb-12">
-                    <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div id="progressBar" class="h-full bg-[#151634] transition-all duration-300"></div>
+                    <div class="h-3 sm:h-4 bg-gray-200/90 dark:bg-gray-800 rounded-full overflow-hidden ring-1 ring-black/[0.06] dark:ring-white/[0.08]">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-[#151634] to-[#c8f31a] dark:from-[#1e2050] dark:to-[#9cb816] transition-all duration-300 rounded-full"></div>
                     </div>
                 </div>
 
                 <!-- Container para botões -->
                 <div class="flex gap-4 justify-center w-full max-w-4xl">
-                    <button id="resetButton" class="px-12 py-6 bg-red-500 hover:bg-red-600 text-white rounded-lg text-2xl font-medium transition-colors flex items-center gap-2">
+                    <button type="button" id="resetButton" class="px-10 py-5 sm:px-12 sm:py-6 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xl sm:text-2xl font-semibold shadow-lg shadow-red-500/20 transition-all flex items-center gap-2 active:scale-[0.99]">
                         <i data-lucide="square"></i>
                         Parar
                     </button>
-                    <button id="pauseButton" class="px-12 py-6 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-2xl font-medium transition-colors flex items-center gap-2">
+                    <button type="button" id="pauseButton" class="px-10 py-5 sm:px-12 sm:py-6 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xl sm:text-2xl font-semibold shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 active:scale-[0.99]">
                         <i data-lucide="pause"></i>
                         Pausar
                     </button>
-                    <button id="nextBlocoButtonGreen" class="px-12 py-6 bg-green-500 hover:bg-green-600 text-white rounded-lg text-2xl font-medium transition-colors flex items-center gap-2 hidden">
+                    <button type="button" id="nextBlocoButtonGreen" class="px-10 py-5 sm:px-12 sm:py-6 bg-[#151634] hover:bg-[#252a55] text-white rounded-xl text-xl sm:text-2xl font-semibold shadow-lg shadow-[#151634]/25 ring-1 ring-[#c8f31a]/35 transition-all flex items-center gap-2 hidden active:scale-[0.99]">
                         <i data-lucide="arrow-right"></i>
                         Próximo
                     </button>
@@ -243,11 +274,11 @@
             </div>
 
             <!-- Mover o blocosOverview para dentro do timerRunning -->
-            <div id="blocosOverview" class="fixed right-0 top-20 bottom-20 w-64 bg-white dark:bg-gray-800 shadow-lg transform translate-x-full transition-all duration-300 flex flex-col">
+            <div id="blocosOverview" class="fixed right-0 top-20 bottom-20 w-64 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-l border-gray-200/80 dark:border-white/10 shadow-2xl transform translate-x-full transition-all duration-300 flex flex-col">
                 <div class="p-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <h3 class="text-sm font-medium text-gray-800 dark:text-white">Blocos</h3>
-                    <button id="closeBlocksButton" class="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600">
-                        <i data-lucide="x" class="w-4 h-4"></i>
+                    <button type="button" id="closeBlocksButton" class="p-2 min-w-[44px] min-h-[44px] text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-center" aria-label="Fechar painel de blocos">
+                        <i data-lucide="x" class="w-4 h-4" aria-hidden="true"></i>
                     </button>
                 </div>
                 <div class="flex-1 overflow-y-auto py-1">
@@ -259,14 +290,14 @@
         </div>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md p-4 z-50">
-        <div class="container mx-auto flex justify-center items-center gap-2 text-gray-600 dark:text-gray-300">
+    <footer class="app-footer fixed bottom-0 left-0 right-0 shadow-sm py-3 z-50">
+        <div class="container mx-auto flex justify-center items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <span>Desenvolvimento por</span>
             <img src="https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png" 
                  alt="Climba Logo" 
                  class="h-6 object-contain">
             <span>com</span>
-            <i data-lucide="brain-circuit" class="text-blue-500"></i>
+            <i data-lucide="brain-circuit" class="text-[#151634] dark:text-[#c8f31a] shrink-0" aria-hidden="true"></i>
             <span>IA</span>
         </div>
     </footer>
@@ -277,12 +308,12 @@
 
     <!-- Template para blocos -->
     <template id="blocoTemplate" type="text/template">
-        <li id="bloco-${id}" class="bloco-item bg-gray-50 dark:bg-gray-700/50 rounded p-2 flex items-center justify-between ${activeClass} ${doneClass} hover:bg-gray-100 dark:hover:bg-gray-600/50 transition-colors group" data-bloco-id="${id}">
+        <li id="bloco-${id}" class="bloco-item bg-gray-50/90 dark:bg-gray-800/40 rounded-xl p-2.5 flex items-start justify-between gap-2 ${activeClass} ${doneClass} hover:bg-gray-100/90 dark:hover:bg-gray-700/40 ring-1 ring-black/[0.03] dark:ring-white/[0.05] transition-all group" data-bloco-id="${id}">
             <!-- Modo Visualização -->
-            <div class="bloco-view-mode min-w-0 flex-1">
-                <div class="flex items-center gap-1.5">
-                    <span class="bloco-title text-sm font-medium text-gray-800 dark:text-white truncate ${doneTextClass}">${title}</span>
-                    <span class="bloco-duration text-xs text-gray-400 dark:text-gray-500">${duration}min</span>
+            <div class="bloco-view-mode min-w-0 flex-1 pr-0.5">
+                <div class="flex flex-col gap-0.5 min-w-0">
+                    <span class="bloco-title text-sm font-medium text-gray-800 dark:text-white ${doneTextClass}">${title}</span>
+                    <span class="bloco-duration text-xs text-gray-400 dark:text-gray-500 tabular-nums">${duration} min</span>
                 </div>
             </div>
             
@@ -297,7 +328,7 @@
                 </div>
             </div>
             
-            <div class="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="bloco-item-actions flex gap-1 shrink-0 ml-1 pt-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                 <button class="toggle-done-bloco p-1.5 ${doneButtonClass} rounded hover:bg-gray-200/50 dark:hover:bg-gray-500/30" title="${doneButtonTitle}">
                     <i data-lucide="${doneIcon}" class="w-3.5 h-3.5"></i>
                 </button>

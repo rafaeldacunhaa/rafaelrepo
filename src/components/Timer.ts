@@ -29,6 +29,8 @@ export class Timer {
     private lastPiPTime: string = '';
     private lastPiPProgress: number = 0;
     private lastPiPStatus: TimerStatus = 'stopped';
+    /** Quando false, sessão veio do painel de config (manual/horário final): esconde fila na tela cheia. */
+    private showQueueNavigation: boolean = true;
 
     constructor(audioService: AudioServiceInterface, notificationManager: NotificationManagerInterface) {
         this.audioService = audioService;
@@ -100,10 +102,30 @@ export class Timer {
         }
     }
 
+    /** Chamado pelo TimerController antes de start(): fila de blocos vs só configuração. */
+    public setQueueNavigationVisible(visible: boolean): void {
+        this.showQueueNavigation = visible;
+    }
+
+    private applyQueueNavigationVisibility(): void {
+        const row = document.getElementById('timerRunningNavRow');
+        const nav = document.getElementById('timerQueueNav');
+        if (row && nav) {
+            if (this.showQueueNavigation) {
+                nav.classList.remove('hidden');
+                row.classList.remove('justify-end');
+            } else {
+                nav.classList.add('hidden');
+                row.classList.add('justify-end');
+            }
+        }
+    }
+
     start(milliseconds: number, onEnd?: () => void): void {
         this.cleanup(); // Limpa recursos anteriores
         
         this.timerContainer.classList.remove('hidden');
+        this.applyQueueNavigationVisibility();
         
         this.duration = milliseconds;
         this.endTime = Date.now() + milliseconds;
@@ -189,9 +211,9 @@ export class Timer {
             this.notificationManager.sendNotification('Tempo finalizado!');
         }
         
-        const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
-        if (nextBlocoButtonGreen) {
-            nextBlocoButtonGreen.classList.remove('hidden');
+        if (this.showQueueNavigation) {
+            const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
+            nextBlocoButtonGreen?.classList.remove('hidden');
         }
         
         if (this.onEnd) {
@@ -301,7 +323,7 @@ export class Timer {
         ) {
             this.pipController.updateInfo({
                 timeDisplay: currentTime,
-                blocoName: this.getCurrentBlocoName(),
+                blocoName: this.showQueueNavigation ? this.getCurrentBlocoName() : 'Timer',
                 status: this.status,
                 duration: this.duration,
                 remaining: this.getRemaining(),

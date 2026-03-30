@@ -34,7 +34,7 @@ export class TemplateManager {
     }
     populateTemplateSelect(select) {
         console.log('Populando select com templates:', Object.keys(reunioesPredefinidas));
-        select.innerHTML = '<option value="" disabled selected>Templates</option>';
+        select.innerHTML = '<option value="" disabled selected>Escolha um template</option>';
         Object.keys(reunioesPredefinidas).forEach(templateName => {
             const option = document.createElement('option');
             option.value = templateName;

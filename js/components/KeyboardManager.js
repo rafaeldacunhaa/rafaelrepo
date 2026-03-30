@@ -38,7 +38,7 @@ export class KeyboardManager {
                     this.timerController.pause();
                 }
                 else {
-                    this.timerController.start();
+                    this.uiManager.startTimerFromUser();
                 }
                 break;
             case 'escape': // Esc para sair do timer

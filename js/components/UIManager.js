@@ -2,6 +2,7 @@ import { TimerController } from './TimerController.js';
 import { BlocoRenderer } from './BlocoRenderer.js';
 import { TemplateManager } from './TemplateManager.js';
 import { KeyboardManager } from './KeyboardManager.js';
+import { isHorarioFinalModeActive } from '../utils/timerMode.js';
 export class UIManager {
     constructor(timer, blocoManager, audioService) {
         this.boundEventListeners = new Map();
@@ -51,10 +52,14 @@ export class UIManager {
     }
     setupEventListeners() {
         console.log('Configurando event listeners...');
-        // Timer controls
+        // Timer controls — Iniciar = só painel de configuração (duração ou horário final)
         this.addEventListenerWithCleanup('startButton', 'click', () => {
             console.log('Botão start clicado');
-            this.handleStartTimer();
+            this.handleStartFromConfigurationPanel();
+        });
+        this.addEventListenerWithCleanup('startBlocosQueueButton', 'click', () => {
+            console.log('Botão iniciar fila clicado');
+            this.handleStartBlocosQueue();
         });
         this.addEventListenerWithCleanup('toggleBlocosOverview', 'click', () => {
             console.log('Toggle da lista de blocos clicado');
@@ -254,21 +259,31 @@ export class UIManager {
             console.log('Todos os blocos restantes estão concluídos');
         }
     }
-    handleStartTimer() {
-        console.log('Iniciando timer...');
-        // Encontrar o primeiro bloco não concluído
+    /** Mesmo fluxo do botão Iniciar do painel de config (Enter fora de input). */
+    startTimerFromUser() {
+        this.handleStartFromConfigurationPanel();
+    }
+    handleStartFromConfigurationPanel() {
+        console.log('Iniciando timer a partir do painel de configuração...');
+        if (isHorarioFinalModeActive()) {
+            this.blocoManager.resetBlocos();
+            this.blocoRenderer.render();
+        }
+        this.timerController.startFromConfigurationPanel();
+    }
+    /** Fila de blocos: primeiro pendente ou start() (bloco ativo / duração / autocreate). */
+    handleStartBlocosQueue() {
+        console.log('Iniciando fila de blocos...');
+        if (isHorarioFinalModeActive()) {
+            return;
+        }
         const firstUnfinishedIndex = this.blocoManager.findFirstUnfinishedBlocoIndex();
         if (firstUnfinishedIndex !== -1) {
-            // Definir o primeiro bloco não concluído como ativo
             this.blocoManager.setCurrentBlocoIndex(firstUnfinishedIndex);
-            // Atualizar apenas o bloco ativo para evitar re-renderização completa
             this.blocoRenderer.renderActiveBlocoOnly();
-            // Iniciar o timer
             this.timerController.restartFromBeginning();
             return;
         }
-        // Sem blocos não concluídos: delegar para o TimerController iniciar via tempo manual,
-        // que poderá autocriar um bloco e iniciar
         this.timerController.start();
     }
     updateActiveBloco(currentIndex, newIndex) {
@@ -292,8 +307,8 @@ export class UIManager {
         this.blocoManager.setCurrentBlocoIndex(newIndex);
         // Atualizar apenas o bloco ativo para evitar re-renderização completa
         this.blocoRenderer.renderActiveBlocoOnly();
-        // Iniciar o timer com o novo bloco
-        this.timerController.start();
+        // Iniciar o timer com o novo bloco (sempre pela duração do bloco, não pelo modo Horário Final)
+        this.timerController.startWithCurrentBlock();
         // Esconder o botão verde se estiver visível
         const nextBlocoButtonGreen = document.getElementById('nextBlocoButtonGreen');
         if (nextBlocoButtonGreen) {

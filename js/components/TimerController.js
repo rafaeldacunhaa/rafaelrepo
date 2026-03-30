@@ -1,3 +1,4 @@
+import { isHorarioFinalModeActive } from '../utils/timerMode.js';
 export class TimerController {
     constructor(timer, blocoManager) {
         this.timer = timer;
@@ -7,6 +8,11 @@ export class TimerController {
         return this.timer.getStatus();
     }
     start() {
+        this.timer.setQueueNavigationVisible(true);
+        if (isHorarioFinalModeActive()) {
+            this.startWithManualTime();
+            return;
+        }
         const blocos = this.blocoManager.getBlocos();
         if (blocos.length > 0) {
             this.startWithCurrentBlock();
@@ -15,6 +21,7 @@ export class TimerController {
         this.startWithManualTime();
     }
     restartFromBeginning() {
+        this.timer.setQueueNavigationVisible(true);
         const blocos = this.blocoManager.getBlocos();
         if (blocos.length > 0) {
             const firstUnfinishedIndex = this.blocoManager.findFirstUnfinishedBlocoIndex();
@@ -57,11 +64,34 @@ export class TimerController {
             return;
         const milliseconds = currentBloco.duration * 60 * 1000;
         console.log('Iniciando bloco:', currentBloco.title);
+        this.timer.setQueueNavigationVisible(true);
         this.timer.start(milliseconds);
     }
+    /**
+     * Botão Iniciar do painel de configuração: horário final OU duração H/M/S.
+     * Nunca usa a fila de blocos existente (não chama startWithCurrentBlock).
+     */
+    startFromConfigurationPanel() {
+        this.timer.setQueueNavigationVisible(false);
+        if (isHorarioFinalModeActive()) {
+            const endHourInput = document.getElementById('endHour');
+            if (!endHourInput?.value?.trim()) {
+                alert('Por favor, selecione um horário final.');
+                return;
+            }
+            this.startWithEndTime(endHourInput.value);
+            return;
+        }
+        /* Sessão só por duração: não gravar bloco na lista (evita “fantasma” após F5). */
+        this.startWithDuration(false);
+    }
     startWithManualTime() {
-        const endHourInput = document.getElementById('endHour');
-        if (endHourInput?.value) {
+        if (isHorarioFinalModeActive()) {
+            const endHourInput = document.getElementById('endHour');
+            if (!endHourInput?.value?.trim()) {
+                alert('Por favor, selecione um horário final.');
+                return;
+            }
             this.startWithEndTime(endHourInput.value);
             return;
         }
@@ -76,11 +106,14 @@ export class TimerController {
             alert('Por favor, selecione um horário futuro.');
             return;
         }
-        // Autocriar bloco se não houver nenhum não concluído
-        this.maybeCreateBlockFromMilliseconds(milliseconds);
+        // Modo horário final: sessão sem bloco na lista (não autocriar)
         this.timer.start(milliseconds);
     }
-    startWithDuration() {
+    /**
+     * @param autoCreateBlockIfEmpty — se true, cria bloco na fila quando não há pendente (ex.: “Iniciar fila” sem blocos).
+     *   false para o botão “Iniciar” do painel: timer avulso, sem persistir duração como item da lista.
+     */
+    startWithDuration(autoCreateBlockIfEmpty = true) {
         const hoursInput = document.getElementById('hours');
         const minutesInput = document.getElementById('minutes');
         const secondsInput = document.getElementById('seconds');
@@ -95,8 +128,9 @@ export class TimerController {
             alert('Por favor, insira um tempo válido.');
             return;
         }
-        // Autocriar bloco se não houver nenhum não concluído
-        this.maybeCreateBlockFromMilliseconds(totalMilliseconds);
+        if (autoCreateBlockIfEmpty) {
+            this.maybeCreateBlockFromMilliseconds(totalMilliseconds);
+        }
         this.timer.start(totalMilliseconds);
     }
     maybeCreateBlockFromMilliseconds(milliseconds) {

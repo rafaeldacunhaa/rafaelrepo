@@ -4,6 +4,7 @@ export class TabManager {
         this.horarioFinalTab = document.getElementById('horarioFinalTab');
         this.timerManualMode = document.getElementById('timerManualMode');
         this.horarioFinalMode = document.getElementById('horarioFinalMode');
+        this.startBlocosQueueButton = document.getElementById('startBlocosQueueButton');
         this.initialize();
     }
     initialize() {
@@ -28,6 +29,13 @@ export class TabManager {
         // Mostrar/ocultar modos
         this.timerManualMode.classList.remove('hidden');
         this.horarioFinalMode.classList.add('hidden');
+        this.timerManualTab.setAttribute('aria-selected', 'true');
+        this.horarioFinalTab.setAttribute('aria-selected', 'false');
+        this.timerManualTab.tabIndex = 0;
+        this.horarioFinalTab.tabIndex = -1;
+        this.timerManualMode.removeAttribute('aria-hidden');
+        this.horarioFinalMode.setAttribute('aria-hidden', 'true');
+        this.startBlocosQueueButton?.classList.remove('hidden');
     }
     switchToFinalMode() {
         if (!this.timerManualTab || !this.horarioFinalTab || !this.timerManualMode || !this.horarioFinalMode)
@@ -40,6 +48,13 @@ export class TabManager {
         // Mostrar/ocultar modos
         this.timerManualMode.classList.add('hidden');
         this.horarioFinalMode.classList.remove('hidden');
+        this.timerManualTab.setAttribute('aria-selected', 'false');
+        this.horarioFinalTab.setAttribute('aria-selected', 'true');
+        this.timerManualTab.tabIndex = -1;
+        this.horarioFinalTab.tabIndex = 0;
+        this.timerManualMode.setAttribute('aria-hidden', 'true');
+        this.horarioFinalMode.removeAttribute('aria-hidden');
+        this.startBlocosQueueButton?.classList.add('hidden');
     }
 }
 //# sourceMappingURL=TabManager.js.map

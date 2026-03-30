@@ -49,7 +49,7 @@ export class KeyboardManager {
                 } else if (this.timerController.getStatus() === 'paused') {
                     this.timerController.pause();
                 } else {
-                    this.timerController.start();
+                    this.uiManager.startTimerFromUser();
                 }
                 break;
             case 'escape':  // Esc para sair do timer
