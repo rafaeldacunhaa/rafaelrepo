@@ -11,9 +11,15 @@
     <meta http-equiv="Expires" content="0">
     
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/147/147186.png" type="image/png">
+
+    <!-- Google Fonts: preconnect + link evita ORB e remove waterfall do @import no CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,500..600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="css/styles.css?v=2.0.3" rel="stylesheet">
-    
+    <link href="css/styles.css?v=2.0.4" rel="stylesheet">
+
     <!-- Scripts externos -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -22,7 +28,12 @@
         tailwind.config = {
             darkMode: 'class',
             theme: {
-                extend: {}
+                extend: {
+                    fontFamily: {
+                        sans: ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        display: ['"Outfit"', '"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    }
+                }
             }
         }
     </script>
@@ -303,8 +314,8 @@
     </footer>
 
     <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
-    <audio id="tempoEsgotadoSound" src="tempo-esgotado.mp3?v=2.0.3"></audio>
-    <audio id="tempoAcabandoSound" src="tempo-acabando.mp3?v=2.0.3"></audio>
+    <audio id="tempoEsgotadoSound" src="tempo-esgotado.mp3?v=2.0.4"></audio>
+    <audio id="tempoAcabandoSound" src="tempo-acabando.mp3?v=2.0.4"></audio>
 
     <!-- Template para blocos -->
     <template id="blocoTemplate" type="text/template">
@@ -356,6 +367,6 @@
         </li>
     </template>
 
-    <script type="module" src="js/script.js?v=2.0.3"></script>
+    <script type="module" src="js/script.js?v=2.0.4"></script>
 </body>
 </html>
