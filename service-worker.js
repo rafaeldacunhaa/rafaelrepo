@@ -1,101 +1,42 @@
-const CACHE_NAME = 'cronnaclimba-v2';
-const urlsToCache = [
-  './',
-  './css/styles.css',
-  './tempo-acabando.mp3',
-  './tempo-esgotado.mp3'
-];
-
-// Arquivos que não devem ser cacheados
-const noCacheFiles = [
-  './js/script.js',
-  './js/components/Timer.js',
-  './js/components/UIManager.js',
-  './js/components/BlocoManager.js',
-  './js/components/NotificationManager.js',
-  './js/services/AudioService.js',
-  './js/services/ThemeService.js',
-  './js/services/WorkerService.js',
-  './js/data/templates.js'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Cache aberto');
-        return cache.addAll(urlsToCache).catch(error => {
-          console.error('Erro ao adicionar arquivos ao cache:', error);
-          return Promise.all(
-            urlsToCache.map(url =>
-              cache.add(url).catch(err => {
-                console.error(`Erro ao adicionar ${url} ao cache:`, err);
-                return Promise.resolve();
-              })
-            )
-          );
-        });
-      })
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    (async () => {
-      // Para arquivos que não devem ser cacheados, sempre buscar da rede
-      if (noCacheFiles.some(file => event.request.url.includes(file))) {
-        try {
-          return await fetch(event.request);
-        } catch (error) {
-          console.error('Erro ao buscar arquivo da rede:', error);
-          return caches.match(event.request);
-        }
-      }
-
-      // Para outros arquivos, tentar cache primeiro
-      const cachedResponse = await caches.match(event.request);
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      try {
-        return await fetch(event.request);
-      } catch (error) {
-        console.error('Erro ao buscar arquivo:', error);
-        return new Response('Erro de rede', { status: 503 });
-      }
-    })()
-  );
+// Substitui o SW antigo (que usava cache-first). Ao ativar, apaga todos os
+// caches, se desregistra e força reload das janelas abertas para que voltem a
+// usar a rede diretamente. Manter este arquivo no repositório por tempo
+// indefinido — qualquer cliente que ainda tenha o SW antigo registrado vai
+// buscá-lo ao checar update e só assim termina de ser limpo.
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
+  event.waitUntil((async () => {
+    try {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+    } catch (error) {
+      console.error('Erro ao apagar caches:', error);
+    }
+
+    try {
+      await self.registration.unregister();
+    } catch (error) {
+      console.error('Erro ao desregistrar service worker:', error);
+    }
+
+    try {
+      const clientsList = await self.clients.matchAll({ type: 'window' });
+      await Promise.all(
+        clientsList.map((client) =>
+          client.navigate(client.url).catch((err) =>
+            console.error('Erro ao recarregar cliente:', err)
+          )
+        )
       );
-    })
-  );
+    } catch (error) {
+      console.error('Erro ao listar clientes:', error);
+    }
+  })());
 });
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: 'window' })
-      .then((clientList) => {
-        for (const client of clientList) {
-          if (client.url === '/' && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        if (clients.openWindow) {
-          return clients.openWindow('/');
-        }
-      })
-  );
-}); 
+self.addEventListener('fetch', (event) => {
+  event.respondWith(fetch(event.request));
+});

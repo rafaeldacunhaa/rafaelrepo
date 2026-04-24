@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.workerService = workerService;
         
         console.log('Inicializando NotificationManager...');
-        const notificationManager = new NotificationManager(workerService);
+        const notificationManager = new NotificationManager();
         window.notificationManager = notificationManager;
         
         console.log('Inicializando ThemeService...');

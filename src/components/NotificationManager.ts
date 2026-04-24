@@ -1,13 +1,9 @@
-import { WorkerService } from '../services/WorkerService.js';
-
 export class NotificationManager {
     private titleInterval: number | null = null;
     private originalTitle: string;
-    private workerService: WorkerService;
 
-    constructor(workerService: WorkerService) {
+    constructor() {
         this.originalTitle = document.title;
-        this.workerService = workerService;
         this.setupNotifications();
     }
 
@@ -29,7 +25,7 @@ export class NotificationManager {
 
         let isOriginal = true;
         document.title = `🔔 ${message}`;
-        
+
         this.titleInterval = window.setInterval(() => {
             document.title = isOriginal ? `🔔 ${message}` : this.originalTitle;
             isOriginal = !isOriginal;
@@ -38,31 +34,23 @@ export class NotificationManager {
 
     async sendNotification(message: string): Promise<void> {
         if (!("Notification" in window)) return;
+        if (Notification.permission !== "granted") return;
 
-        if (Notification.permission === "granted") {
-            try {
-                const registration = await this.workerService.getRegistration();
-                if (!registration) {
-                    throw new Error('Service Worker não registrado');
-                }
+        try {
+            const notification = new Notification("⏰ CronnaClimba 2.0", {
+                body: message,
+                icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
+                tag: 'timer-notification',
+                requireInteraction: true,
+                silent: false
+            } as NotificationOptions);
 
-                await registration.showNotification("⏰ CronnaClimba 2.0", {
-                    body: message,
-                    icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
-                    badge: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png",
-                    vibrate: [200, 100, 200, 100, 200] as any,
-                    tag: 'timer-notification',
-                    renotify: true,
-                    requireInteraction: true,
-                    silent: false
-                } as NotificationOptions);
-            } catch (e) {
-                // Fallback para notificação simples
-                new Notification("⏰ CronnaClimba 2.0", {
-                    body: message,
-                    icon: "https://www.climba.dev/wp-content/uploads/2019/09/climba_rgb-01-300x100.png"
-                });
-            }
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
+        } catch (e) {
+            console.error('Erro ao exibir notificação:', e);
         }
     }
 
@@ -73,4 +61,4 @@ export class NotificationManager {
             document.title = this.originalTitle;
         }
     }
-} 
+}

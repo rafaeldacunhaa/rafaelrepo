@@ -1,62 +1,22 @@
+// Compat shim: nenhum service worker é registrado.
+// Mantido apenas para apagar SW antigos e caches que ainda podem estar instalados nos clientes.
 export class WorkerService {
-    private worker: ServiceWorker | null = null;
-    private registration: ServiceWorkerRegistration | null = null;
-
     constructor() {
-        this.registerServiceWorker();
+        this.cleanup();
     }
 
-    public async getRegistration(): Promise<ServiceWorkerRegistration | null> {
-        if (!this.registration) {
-            this.registration = await this.registerServiceWorker();
-        }
-        return this.registration;
-    }
-
-    private async registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-        if ('serviceWorker' in navigator) {
-            try {
-                const registration = await navigator.serviceWorker.register('./service-worker.js');
-                console.log('Service Worker registrado com sucesso:', registration);
-
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    if (newWorker) {
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed') {
-                                if (navigator.serviceWorker.controller) {
-                                    this.notifyUpdate();
-                                }
-                            }
-                        });
-                    }
-                });
-
-                if (registration.waiting) {
-                    this.notifyUpdate();
-                }
-
-                this.registration = registration;
-                return registration;
-            } catch (error) {
-                console.error('Erro ao registrar Service Worker:', error);
-                return null;
+    private async cleanup(): Promise<void> {
+        try {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map((reg) => reg.unregister()));
             }
-        }
-        return null;
-    }
-
-    private notifyUpdate(): void {
-        const updateNotification = document.getElementById('updateNotification');
-        if (updateNotification) {
-            updateNotification.classList.remove('hidden');
-            
-            const updateButton = updateNotification.querySelector('#updateButton');
-            if (updateButton) {
-                updateButton.addEventListener('click', () => {
-                    window.location.reload();
-                });
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map((name) => caches.delete(name)));
             }
+        } catch (error) {
+            console.error('Erro ao limpar Service Worker / caches:', error);
         }
     }
-} 
+}
