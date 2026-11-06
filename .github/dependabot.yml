@@ -23,6 +23,13 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    # Evita bumps major automáticos (TypeScript 7, concurrently 10 etc.
+    # já causaram quebra de build). Majors ficam como security-only; se
+    # quiser atualizar, abra a PR manualmente.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   # GitHub Actions (caso venha a usar workflows no futuro)
   - package-ecosystem: "github-actions"
